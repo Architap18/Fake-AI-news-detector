@@ -6,7 +6,7 @@ ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointE
 ChartJS.defaults.color = '#9BA1A6';
 ChartJS.defaults.font.family = "'Inter', sans-serif";
 
-export default function Dashboard({ history, setHistory }) {
+export default function Dashboard({ history, setHistory, onAutoFill }) {
   const fakeCount = history.filter(h => h.verdict === 'FAKE').length;
   const realCount = history.filter(h => h.verdict === 'REAL').length;
 
@@ -93,7 +93,10 @@ export default function Dashboard({ history, setHistory }) {
                     <td>{item.source}</td>
                     <td><span className={`badge ${item.verdict.toLowerCase()}`}>{item.verdict}</span></td>
                     <td>{item.confidence}%</td>
-                    <td><button className="delete-btn" onClick={() => deleteItem(item.id)}><i className="ri-delete-bin-line"></i></button></td>
+                    <td style={{ display: 'flex', gap: '0.5rem' }}>
+                      <button className="pill unknown" style={{ padding: '0.2rem 0.5rem', fontSize: '0.7rem' }} onClick={() => onAutoFill(item.context, item.source)}>ENGAGE</button>
+                      <button className="delete-btn" onClick={() => deleteItem(item.id)}><i className="ri-delete-bin-line"></i></button>
+                    </td>
                   </tr>
                 ))}
               </tbody>

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-export default function KnowledgeMap({ trustedSources, flaggedSources, setTrustedSources, setFlaggedSources }) {
+export default function KnowledgeMap({ trustedSources, flaggedSources, setTrustedSources, setFlaggedSources, onAutoFill }) {
   const [newSourceName, setNewSourceName] = useState('');
   const [newSourceType, setNewSourceType] = useState('trusted');
 
@@ -32,7 +32,7 @@ export default function KnowledgeMap({ trustedSources, flaggedSources, setTruste
               <ul className="source-list">
                 {trustedSources.map(source => (
                   <li key={source.id}>
-                    <span>{source.name}</span> 
+                    <span onClick={() => onAutoFill('', source.name)} style={{ cursor: 'pointer', color: 'var(--primary)' }}>{source.name}</span> 
                     <button className="delete-btn" onClick={() => removeTrusted(source.id)}><i className="ri-close-line"></i></button>
                   </li>
                 ))}
@@ -43,7 +43,7 @@ export default function KnowledgeMap({ trustedSources, flaggedSources, setTruste
               <ul className="source-list">
                 {flaggedSources.map(source => (
                   <li key={source.id}>
-                    <span>{source.name}</span> 
+                    <span onClick={() => onAutoFill('', source.name)} style={{ cursor: 'pointer', color: 'var(--danger)' }}>{source.name}</span> 
                     <button className="delete-btn" onClick={() => removeFlagged(source.id)}><i className="ri-close-line"></i></button>
                   </li>
                 ))}

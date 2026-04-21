@@ -38,8 +38,20 @@
     },
     {
       "parameters": {
-        "model": "llama-3.1-8b-instant",
-        "prompt": "={{ 'Analyze this news article for authenticity.\\n\\nKNOWLEDGE BASE CONTEXT:\\n' + $items(\"Code — RAG Matcher\").map(i => '- ' + (i.json.title || i.json[\"ARTICLE TITLE\"]) + ' (Label: ' + (i.json.label || i.json.VERDICT) + ')').join('\\n') + '\\n\\nArticle: ' + $node[\"Webhook — Form Submission\"].json.article_text + '\\n\\nRespond in JSON:\\n{\\n  \"verdict\": \"REAL/FAKE\",\\n  \"confidence\": 0-100,\\n  \"sentiment_score\": 0-10,\\n  \"sentiment_verdict\": \"NEUTRAL/EMOTIONAL/MANIPULATIVE\",\\n  \"reason1\": \"...\",\\n  \"reason2\": \"...\",\\n  \"reason3\": \"...\",\\n  \"similar_article\": \"...\"\\n}' }}"
+        "method": "POST",
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer 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"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"llama-3.1-8b-instant\",\n  \"messages\": [\n    { \"role\": \"system\", \"content\": \"You are a JSON-only API. Analyze news for authenticity using the provided context.\" },\n    { \"role\": \"user\", \"content\": {{ 'Analyze this news article for authenticity.\\n\\nKNOWLEDGE BASE CONTEXT:\\n' + $items(\"Code — RAG Matcher\").map(i => '- ' + (i.json.title || i.json[\"ARTICLE TITLE\"]) + ' (Label: ' + (i.json.label || i.json.VERDICT) + ')').join('\\n') + '\\n\\nArticle: ' + $node[\"Webhook — Form Submission\"].json.article_text + '\\n\\nRespond in JSON:\\n{\\n  \"verdict\": \"REAL/FAKE\",\\n  \"confidence\": 0-100,\\n  \"sentiment_score\": 0-10,\\n  \"sentiment_verdict\": \"NEUTRAL/EMOTIONAL/MANIPULATIVE\",\\n  \"reason1\": \"...\",\\n  \"reason2\": \"...\",\\n  \"reason3\": \"...\",\\n  \"similar_article\": \"...\"\\n}' }} }\n  ],\n  \"response_format\": { \"type\": \"json_object\" }\n}"
       },
       "id": "4",
       "name": "Groq — AI Analysis",

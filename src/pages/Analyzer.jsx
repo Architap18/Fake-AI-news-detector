@@ -7,12 +7,33 @@ export default function Analyzer({
   knowledgeBase, 
   trustedSources, 
   flaggedSources,
-  addHistoryItem
+  addHistoryItem,
+  prefillContent,
+  setPrefillContent
 }) {
   const [content, setContent] = useState('');
   const [source, setSource] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
+
+  useEffect(() => {
+    if (prefillContent && prefillContent.content) {
+      setContent(prefillContent.content);
+      setSource(prefillContent.source || '');
+      // Clear prefill after loading it
+      setPrefillContent({ content: '', source: '' });
+    }
+  }, [prefillContent, setPrefillContent]);
+
+  const [isUrl, setIsUrl] = useState(false);
+
+  useEffect(() => {
+    if (content.startsWith('http')) {
+      setIsUrl(true);
+    } else {
+      setIsUrl(false);
+    }
+  }, [content]);
 
   const handleAnalyze = async () => {
     if (!content.trim()) return;
@@ -21,7 +42,7 @@ export default function Analyzer({
     setResult(null);
 
     try {
-      // 1. Send to n8n Webhook
+      // 1. Send to n8n Webhook (Supports both text and URLs now)
       const response = await fetch(webhookUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -75,8 +96,13 @@ export default function Analyzer({
         <textarea 
           value={content} 
           onChange={e => setContent(e.target.value)} 
-          placeholder="// PASTE ARTICLE OR HEADLINE HERE..."
+          placeholder="// PASTE ARTICLE, HEADLINE, OR URL HERE..."
         ></textarea>
+        {isUrl && (
+          <div className="url-indicator" style={{ color: 'var(--secondary)', fontSize: '0.8rem', marginBottom: '0.5rem', fontFamily: 'var(--font-display)' }}>
+            <i className="ri-radar-line"></i> URL DETECTED: SENTINEL SCRAPER ENGAGING...
+          </div>
+        )}
         <div style={{ marginTop: '1rem', display: 'flex', gap: '1rem' }}>
           <input 
             type="text" 

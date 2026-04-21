@@ -32,7 +32,13 @@ function App() {
 
   // HARDCODED WEBHOOK FOR THE GROUP PROJECT
   const [webhookUrl] = useState('http://localhost:5678/webhook-test/fakeshield-submit');
+  const [prefillContent, setPrefillContent] = useState({ content: '', source: '' });
   const [showEthicsModal, setShowEthicsModal] = useState(false);
+
+  const handleAutoFill = (content, source) => {
+    setPrefillContent({ content, source });
+    setActiveView('analyzer');
+  };
 
   useEffect(() => {
     localStorage.setItem('fakeshield_history', JSON.stringify(history));
@@ -57,15 +63,17 @@ function App() {
 
         {activeView === 'analyzer' && (
           <Analyzer 
-            groqApiKey={groqApiKey}
+            webhookUrl={webhookUrl}
             knowledgeBase={KNOWLEDGE_BASE}
             trustedSources={trustedSources}
             flaggedSources={flaggedSources}
             addHistoryItem={(item) => setHistory([item, ...history])}
+            prefillContent={prefillContent}
+            setPrefillContent={setPrefillContent}
           />
         )}
         {activeView === 'dashboard' && (
-          <Dashboard history={history} setHistory={setHistory} />
+          <Dashboard history={history} setHistory={setHistory} onAutoFill={handleAutoFill} />
         )}
         {activeView === 'knowledge' && (
           <KnowledgeMap 
@@ -73,6 +81,7 @@ function App() {
             flaggedSources={flaggedSources}
             setTrustedSources={setTrustedSources}
             setFlaggedSources={setFlaggedSources}
+            onAutoFill={handleAutoFill}
           />
         )}
         {activeView === 'ethics' && <Ethics />}
