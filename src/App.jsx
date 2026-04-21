@@ -30,8 +30,8 @@ function App() {
       { id: 18, name: 'Satire sites' }
   ]);
 
-  // HARDCODED API KEY FOR AUTOMATIC INTELLIGENCE
-  const [groqApiKey] = useState('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');
+  // HARDCODED WEBHOOK FOR THE GROUP PROJECT
+  const [webhookUrl] = useState('http://localhost:5678/webhook-test/fakeshield-submit');
   const [showEthicsModal, setShowEthicsModal] = useState(false);
 
   useEffect(() => {

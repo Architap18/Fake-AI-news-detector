@@ -3,7 +3,7 @@ import { generateGroqAnalysis } from '../utils/api';
 import { parseAIResponse, evaluateCredibility, applyLogicRules } from '../utils/logicEngine';
 
 export default function Analyzer({ 
-  groqApiKey, 
+  webhookUrl, 
   knowledgeBase, 
   trustedSources, 
   flaggedSources,
@@ -21,48 +21,33 @@ export default function Analyzer({
     setResult(null);
 
     try {
-      // 1. RAG Search (Local)
-      const getKeywords = (str) => str.toLowerCase().replace(/[^\w\s]/g, '').split(/\s+/).filter(w => w.length > 4);
-      const inputKws = getKeywords(content);
-      const similar = knowledgeBase.map(a => {
-        const akws = getKeywords(a.title);
-        const matches = inputKws.filter(kw => akws.includes(kw)).length;
-        return { ...a, score: matches };
-      }).sort((a, b) => b.score - a.score).slice(0, 3);
+      // 1. Send to n8n Webhook
+      const response = await fetch(webhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          headline: content.substring(0, 100),
+          article_text: content,
+          source: source || 'Unknown',
+          date: new Date().toLocaleDateString()
+        })
+      });
 
-      const ragContext = similar.map(a => `- "${a.title}" (Label: ${a.label}, Source: ${a.source})`).join('\n');
-
-      // 2. Direct Groq AI Call
-      const prompt = `Analyze this news article for authenticity.
-KNOWLEDGE BASE CONTEXT:
-${ragContext}
-
-Respond ONLY in valid JSON format:
-{
-  "VERDICT": "REAL" or "FAKE",
-  "CONFIDENCE": 0-100,
-  "SENTIMENT_SCORE": 0-10,
-  "SENTIMENT_VERDICT": "NEUTRAL" or "EMOTIONAL" or "MANIPULATIVE",
-  "REASON1": "...",
-  "REASON2": "...",
-  "REASON3": "...",
-  "SIMILAR_ARTICLE": "title of most similar article"
-}
-
-Article: ${content}
-Source: ${source}`;
-
-      const responseRaw = await generateGroqAnalysis(groqApiKey, prompt);
-      const parsed = parseAIResponse(responseRaw);
-      const credibility = evaluateCredibility(source, trustedSources, flaggedSources);
-      const { finalVerdict, rule } = applyLogicRules(parsed, source, credibility);
-
+      if (!response.ok) throw new Error('Intelligence Link Offline');
+      
+      const data = await response.json();
+      
+      // 2. Map n8n response to UI
       const finalResult = {
-        ...parsed,
-        finalVerdict,
-        ruleApplied: rule,
-        credibilityStatus: credibility.status,
-        credibilityClass: credibility.class
+        finalVerdict: data.verdict || 'UNKNOWN',
+        confidence: parseInt(data.confidence) || 50,
+        sentimentVerdict: data.sentiment_verdict || 'NEUTRAL',
+        sentimentScore: data.sentiment_score || 5,
+        credibilityStatus: data.source_status || 'UNKNOWN',
+        credibilityClass: (data.source_status || 'UNKNOWN').toLowerCase(),
+        reasoning: [data.reason1, data.reason2, data.reason3].filter(Boolean),
+        ruleApplied: data.rule_applied || 'Cloud Intelligence Analysis',
+        similarArticle: data.similar_article || 'None'
       };
 
       setResult(finalResult);
@@ -78,7 +63,7 @@ Source: ${source}`;
 
     } catch (e) {
       console.error(e);
-      alert(`SYSTEM ERROR: ${e.message}`);
+      alert('SENTINEL_ERROR: Connection to Intelligence Core timed out. Ensure n8n is running and "Execute Workflow" is clicked.');
     } finally {
       setLoading(false);
     }

@@ -1,0 +1,101 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "fakeshield-submit",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "1",
+      "name": "Webhook — Form Submission",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [200, 300]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": "16AG4TGsOaeAzisNPusuQUE4G3yQsuj5J2Koh_eyeHxU",
+        "sheetName": "Sheet1",
+        "filters": {}
+      },
+      "id": "2",
+      "name": "Google Sheets — Fetch Knowledge Base",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 3,
+      "position": [400, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $node[\"Webhook — Form Submission\"].json.headline.toLowerCase();\nconst kb = items.map(i => i.json);\n\n// Simple Keyword Match\nconst matches = kb.map(a => {\n  const title = a.title || a[\"ARTICLE TITLE\"] || \"\";\n  const score = input.split(' ').filter(word => title.toLowerCase().includes(word) && word.length > 4).length;\n  return { ...a, similarity_score: score };\n}).sort((a, b) => b.similarity_score - a.similarity_score);\n\nreturn matches.slice(0, 3);"
+      },
+      "id": "3",
+      "name": "Code — RAG Matcher",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [600, 300]
+    },
+    {
+      "parameters": {
+        "model": "llama-3.1-8b-instant",
+        "prompt": "={{ 'Analyze this news article for authenticity.\\n\\nKNOWLEDGE BASE CONTEXT:\\n' + $items(\"Code — RAG Matcher\").map(i => '- ' + (i.json.title || i.json[\"ARTICLE TITLE\"]) + ' (Label: ' + (i.json.label || i.json.VERDICT) + ')').join('\\n') + '\\n\\nArticle: ' + $node[\"Webhook — Form Submission\"].json.article_text + '\\n\\nRespond in JSON:\\n{\\n  \"verdict\": \"REAL/FAKE\",\\n  \"confidence\": 0-100,\\n  \"sentiment_score\": 0-10,\\n  \"sentiment_verdict\": \"NEUTRAL/EMOTIONAL/MANIPULATIVE\",\\n  \"reason1\": \"...\",\\n  \"reason2\": \"...\",\\n  \"reason3\": \"...\",\\n  \"similar_article\": \"...\"\\n}' }}"
+      },
+      "id": "4",
+      "name": "Groq — AI Analysis",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [800, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const ai = JSON.parse($node[\"Groq — AI Analysis\"].json.body);\nconst source = ($node[\"Webhook — Form Submission\"].json.source || \"\").toUpperCase();\n\nlet verdict = ai.verdict;\nlet rule = \"AI Standard\";\n\n// Apply 5 Cyberpunk Rules\nif (source.includes('FABRICATED')) { verdict = 'FAKE'; rule = 'Rule 1: Fabricated Source'; }\nelse if (source.includes('VIRAL') && ai.sentiment_score > 6) { verdict = 'FAKE'; rule = 'Rule 2: High Sentiment Risk'; }\nelse if (source.includes('REUTERS') && ai.sentiment_score < 3) { verdict = 'REAL'; rule = 'Rule 3: Trusted Clean Source'; }\nelse if (ai.confidence > 70 && ai.verdict === 'FAKE') { verdict = 'FAKE'; rule = 'Rule 4: High Confidence Confirmation'; }\nelse if (source.includes('REUTERS') && ai.confidence < 35) { verdict = 'REAL'; rule = 'Rule 5: Trusted Source Low Confidence'; }\n\nreturn { ...ai, verdict, rule_applied: rule, source_status: source.includes('REUTERS') ? 'TRUSTED' : 'UNKNOWN' };"
+      },
+      "id": "5",
+      "name": "Code — Logic Engine",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [1000, 300]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": "16AG4TGsOaeAzisNPusuQUE4G3yQsuj5J2Koh_eyeHxU",
+        "sheetName": "Log",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Headline": "={{ $node[\"Webhook — Form Submission\"].json.headline }}",
+            "Verdict": "={{ $node[\"Code — Logic Engine\"].json.verdict }}",
+            "Confidence": "={{ $node[\"Code — Logic Engine\"].json.confidence }}",
+            "Timestamp": "={{ new Date().toISOString() }}"
+          }
+        }
+      },
+      "id": "6",
+      "name": "Google Sheets — Log History",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 3,
+      "position": [1200, 300]
+    },
+    {
+      "parameters": {
+        "options": {},
+        "jsonResponse": "={{ $node[\"Code — Logic Engine\"].json }}"
+      },
+      "id": "7",
+      "name": "Respond — Return Result",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1400, 300]
+    }
+  ],
+  "connections": {
+    "Webhook — Form Submission": { "main": [[{ "node": "Google Sheets — Fetch Knowledge Base", "type": "main", "index": 0 }]] },
+    "Google Sheets — Fetch Knowledge Base": { "main": [[{ "node": "Code — RAG Matcher", "type": "main", "index": 0 }]] },
+    "Code — RAG Matcher": { "main": [[{ "node": "Groq — AI Analysis", "type": "main", "index": 0 }]] },
+    "Groq — AI Analysis": { "main": [[{ "node": "Code — Logic Engine", "type": "main", "index": 0 }]] },
+    "Code — Logic Engine": { "main": [[{ "node": "Google Sheets — Log History", "type": "main", "index": 0 }]] },
+    "Google Sheets — Log History": { "main": [[{ "node": "Respond — Return Result", "type": "main", "index": 0 }]] }
+  }
+}
