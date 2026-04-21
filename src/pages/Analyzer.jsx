@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { generateGroqAnalysis } from '../utils/api';
 import { parseAIResponse, evaluateCredibility, applyLogicRules } from '../utils/logicEngine';
 
