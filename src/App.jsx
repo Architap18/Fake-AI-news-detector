@@ -30,7 +30,6 @@ function App() {
       { id: 18, name: 'Satire sites' }
   ]);
 
-  const [groqApiKey, setGroqApiKey] = useState(localStorage.getItem('groqApiKey') || '');
   const [webhookUrl, setWebhookUrl] = useState(localStorage.getItem('webhookUrl') || '');
   const [showSettings, setShowSettings] = useState(false);
   const [showEthicsModal, setShowEthicsModal] = useState(false);

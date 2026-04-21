@@ -3,7 +3,6 @@ import { generateGroqAnalysis } from '../utils/api';
 import { parseAIResponse, evaluateCredibility, applyLogicRules } from '../utils/logicEngine';
 
 export default function Analyzer({ 
-  groqApiKey, 
   webhookUrl, 
   knowledgeBase, 
   trustedSources, 
@@ -17,8 +16,8 @@ export default function Analyzer({
 
   const handleAnalyze = async () => {
     if (!content.trim()) return;
-    if (!groqApiKey) {
-      alert('SENTINEL SYSTEM: Groq API Key Missing. Access Denied.');
+    if (!webhookUrl) {
+      alert('SENTINEL SYSTEM: Webhook Intelligence Link Missing. Deployment Failed.');
       return;
     }
 
@@ -26,83 +25,49 @@ export default function Analyzer({
     setResult(null);
 
     try {
-      // Find 3 most similar articles for RAG
-      const getKeywords = (str) => str.toLowerCase().replace(/[^\w\s]/g, '').split(/\s+/).filter(w => w.length > 4);
-      const inputKws = getKeywords(content);
-      const similar = knowledgeBase.map(a => {
-        const akws = getKeywords(a.title);
-        const matches = inputKws.filter(kw => akws.includes(kw)).length;
-        return { ...a, score: matches };
-      }).sort((a, b) => b.score - a.score).slice(0, 3);
+      // 1. Send to Webhook (n8n handles the Groq analysis now)
+      const response = await fetch(webhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          headline: content.substring(0, 100),
+          article_text: content,
+          source: source || 'Unknown',
+          date: new Date().toLocaleDateString()
+        })
+      });
 
-      const ragContext = similar.map(a => `- "${a.title}" (Label: ${a.label}, Source: ${a.source})`).join('\n');
-
-      const prompt = `You are a fake news detection AI with RAG capabilities.
-KNOWLEDGE BASE (known articles for reference):
-${ragContext}
-
-Analyze this NEW article using the knowledge base above as context. Respond ONLY in valid JSON format:
-{
-  "VERDICT": "REAL" or "FAKE",
-  "CONFIDENCE": 0-100,
-  "SENTIMENT_SCORE": 0-10,
-  "SENTIMENT_VERDICT": "NEUTRAL" or "EMOTIONAL" or "HIGHLY MANIPULATIVE",
-  "REASON1": "...",
-  "REASON2": "...",
-  "REASON3": "...",
-  "SIMILAR_ARTICLE": "title of most similar article"
-}
-
-Article:
-Text: ${content}
-Source: ${source}`;
-
-      const responseRaw = await generateGroqAnalysis(groqApiKey, prompt);
-      const parsed = parseAIResponse(responseRaw);
-      const credibility = evaluateCredibility(source, trustedSources, flaggedSources);
-      const { finalVerdict, rule } = applyLogicRules(parsed, source, credibility);
-
+      if (!response.ok) throw new Error('Intelligence Link Offline');
+      
+      const data = await response.json();
+      
+      // 2. Parse the Webhook response (matching your n8n workflow output)
       const finalResult = {
-        ...parsed,
-        finalVerdict,
-        ruleApplied: rule,
-        credibilityStatus: credibility.status,
-        credibilityClass: credibility.class
+        finalVerdict: data.verdict || 'UNKNOWN',
+        confidence: parseInt(data.confidence) || parseInt(data.bayes_score) || 50,
+        sentimentVerdict: data.sentiment_verdict || 'NEUTRAL',
+        sentimentScore: data.sentiment_score || 5,
+        credibilityStatus: data.source_status || 'UNKNOWN',
+        credibilityClass: (data.source_status || 'UNKNOWN').toLowerCase(),
+        reasoning: [data.reason1, data.reason2, data.reason3].filter(Boolean),
+        ruleApplied: data.logic_rule_applied || 'Cloud Intelligence Analysis',
+        similarArticle: data.similar_article || 'Cross-referenced via Knowledge Base'
       };
 
       setResult(finalResult);
-
-      // Sync with Webhook
-      if (webhookUrl) {
-        fetch(webhookUrl, {
-          method: 'POST',
-          mode: 'no-cors',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            headline: content.substring(0, 50),
-            verdict: finalVerdict,
-            confidence: parsed.confidence,
-            sentiment_score: parsed.sentimentScore,
-            sentiment_verdict: parsed.sentimentVerdict,
-            source_status: credibility.status,
-            logic_rule: rule,
-            timestamp: new Date().toISOString()
-          })
-        });
-      }
 
       addHistoryItem({
         id: Date.now(),
         date: new Date().toLocaleDateString(),
         context: content.substring(0, 60) + '...',
         source: source || 'Unknown',
-        verdict: finalVerdict,
-        confidence: parsed.confidence
+        verdict: finalResult.finalVerdict,
+        confidence: finalResult.confidence
       });
 
     } catch (e) {
       console.error(e);
-      alert('SYSTEM ERROR: Intelligence bypass failed.');
+      alert('SYSTEM ERROR: Connection to Intelligence Core timed out.');
     } finally {
       setLoading(false);
     }
