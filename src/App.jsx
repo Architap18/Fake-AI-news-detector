@@ -31,7 +31,7 @@ function App() {
   ]);
 
   // HARDCODE YOUR WEBHOOK URL HERE SO IT IS PERMANENT FOR THE WHOLE GROUP
-  const [webhookUrl] = useState('http://localhost:5678/webhook/fakeshield-submit');
+  const [webhookUrl] = useState('http://localhost:5678/webhook-test/fakeshield-submit');
   const [showEthicsModal, setShowEthicsModal] = useState(false);
 
   useEffect(() => {
