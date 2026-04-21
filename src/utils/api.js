@@ -6,7 +6,7 @@ export async function generateGroqAnalysis(groqApiKey, prompt) {
             'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-            model: "llama3-8b-8192",
+            model: "llama-3.1-8b-instant",
             messages: [
                 { role: "system", content: "You are a JSON-only API. You must return only a valid JSON object. Do not include markdown formatting like ```json." },
                 { role: "user", content: prompt }
@@ -16,7 +16,8 @@ export async function generateGroqAnalysis(groqApiKey, prompt) {
     });
 
     if (!response.ok) {
-        throw new Error(`API Error: ${response.status}`);
+        const errorData = await response.json();
+        throw new Error(errorData.error?.message || `API Error: ${response.status}`);
     }
 
     const data = await response.json();

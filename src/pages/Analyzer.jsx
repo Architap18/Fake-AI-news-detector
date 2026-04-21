@@ -78,7 +78,7 @@ Source: ${source}`;
 
     } catch (e) {
       console.error(e);
-      alert('SYSTEM ERROR: Analysis failed. Ensure your network is active.');
+      alert(`SYSTEM ERROR: ${e.message}`);
     } finally {
       setLoading(false);
     }
