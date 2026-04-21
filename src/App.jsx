@@ -30,8 +30,8 @@ function App() {
       { id: 18, name: 'Satire sites' }
   ]);
 
-  const [webhookUrl, setWebhookUrl] = useState(localStorage.getItem('webhookUrl') || '');
-  const [showSettings, setShowSettings] = useState(false);
+  // HARDCODE YOUR WEBHOOK URL HERE SO IT IS PERMANENT FOR THE WHOLE GROUP
+  const [webhookUrl] = useState('http://localhost:5678/webhook/fakeshield-submit');
   const [showEthicsModal, setShowEthicsModal] = useState(false);
 
   useEffect(() => {
@@ -46,7 +46,6 @@ function App() {
           <li className={`nav-item ${activeView === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveView('dashboard')}>Dashboard</li>
           <li className={`nav-item ${activeView === 'knowledge' ? 'active' : ''}`} onClick={() => setActiveView('knowledge')}>Knowledge Map</li>
           <li className={`nav-item ${activeView === 'ethics' ? 'active' : ''}`} onClick={() => setActiveView('ethics')}>Ethics</li>
-          <li className="nav-item" onClick={() => setShowSettings(true)} style={{ color: 'var(--secondary)' }}>[ API_CONFIG ]</li>
         </div>
       </nav>
 
@@ -58,7 +57,6 @@ function App() {
 
         {activeView === 'analyzer' && (
           <Analyzer 
-            groqApiKey={groqApiKey}
             webhookUrl={webhookUrl}
             knowledgeBase={KNOWLEDGE_BASE}
             trustedSources={trustedSources}
@@ -79,16 +77,6 @@ function App() {
         )}
         {activeView === 'ethics' && <Ethics />}
       </main>
-
-      {showSettings && (
-        <SettingsModal 
-          close={() => setShowSettings(false)}
-          groqApiKey={groqApiKey}
-          setGroqApiKey={setGroqApiKey}
-          webhookUrl={webhookUrl}
-          setWebhookUrl={setWebhookUrl}
-        />
-      )}
     </div>
   );
 }

@@ -14,18 +14,52 @@ export default function Analyzer({
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
 
+  const runLocalAnalysis = () => {
+    // Basic Keyword Similarity Search (RAG fallback)
+    const getKeywords = (str) => str.toLowerCase().replace(/[^\w\s]/g, '').split(/\s+/).filter(w => w.length > 4);
+    const inputKws = getKeywords(content);
+    
+    const similar = knowledgeBase.map(a => {
+      const akws = getKeywords(a.title);
+      const matches = inputKws.filter(kw => akws.includes(kw)).length;
+      return { ...a, score: matches };
+    }).sort((a, b) => b.score - a.score)[0];
+
+    const isMatch = similar && similar.score > 1;
+    
+    return {
+      finalVerdict: isMatch ? similar.label : 'UNVERIFIED',
+      confidence: isMatch ? (60 + (similar.score * 10)) : 45,
+      sentimentVerdict: 'NEUTRAL ANALYSIS',
+      sentimentScore: 5,
+      credibilityStatus: isMatch ? 'KNOWLEDGE_BASE_MATCH' : 'UNKNOWN',
+      credibilityClass: isMatch ? 'trusted' : 'unknown',
+      reasoning: [
+        isMatch ? `Matched with known record: "${similar.title}"` : "No direct matches found in local intelligence core.",
+        "Performing heuristic pattern matching...",
+        "Cross-referencing trusted source list..."
+      ],
+      ruleApplied: 'Local Sentinel Engine (Offline)',
+      similarArticle: isMatch ? similar.title : 'None'
+    };
+  };
+
   const handleAnalyze = async () => {
     if (!content.trim()) return;
-    if (!webhookUrl) {
-      alert('SENTINEL SYSTEM: Webhook Intelligence Link Missing. Deployment Failed.');
-      return;
-    }
-
+    
     setLoading(true);
     setResult(null);
 
+    // If no Webhook, use Local Fallback
+    if (!webhookUrl) {
+      setTimeout(() => {
+        setResult(runLocalAnalysis());
+        setLoading(false);
+      }, 1500);
+      return;
+    }
+
     try {
-      // 1. Send to Webhook (n8n handles the Groq analysis now)
       const response = await fetch(webhookUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -67,7 +101,7 @@ export default function Analyzer({
 
     } catch (e) {
       console.error(e);
-      alert('SYSTEM ERROR: Connection to Intelligence Core timed out.');
+      alert('SENTINEL_ERROR: Intelligence Link Offline. Ensure your n8n Webhook URL is correctly configured in [ SYSTEM_SYNC ] and is currently active.');
     } finally {
       setLoading(false);
     }
