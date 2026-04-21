@@ -30,8 +30,8 @@ function App() {
       { id: 18, name: 'Satire sites' }
   ]);
 
-  // HARDCODE YOUR WEBHOOK URL HERE SO IT IS PERMANENT FOR THE WHOLE GROUP
-  const [webhookUrl] = useState('http://localhost:5678/webhook-test/fakeshield-submit');
+  // HARDCODED API KEY FOR AUTOMATIC INTELLIGENCE
+  const [groqApiKey] = useState('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');
   const [showEthicsModal, setShowEthicsModal] = useState(false);
 
   useEffect(() => {
@@ -57,7 +57,7 @@ function App() {
 
         {activeView === 'analyzer' && (
           <Analyzer 
-            webhookUrl={webhookUrl}
+            groqApiKey={groqApiKey}
             knowledgeBase={KNOWLEDGE_BASE}
             trustedSources={trustedSources}
             flaggedSources={flaggedSources}

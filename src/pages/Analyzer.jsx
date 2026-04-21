@@ -3,7 +3,7 @@ import { generateGroqAnalysis } from '../utils/api';
 import { parseAIResponse, evaluateCredibility, applyLogicRules } from '../utils/logicEngine';
 
 export default function Analyzer({ 
-  webhookUrl, 
+  groqApiKey, 
   knowledgeBase, 
   trustedSources, 
   flaggedSources,
@@ -14,78 +14,55 @@ export default function Analyzer({
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
 
-  const runLocalAnalysis = () => {
-    // Basic Keyword Similarity Search (RAG fallback)
-    const getKeywords = (str) => str.toLowerCase().replace(/[^\w\s]/g, '').split(/\s+/).filter(w => w.length > 4);
-    const inputKws = getKeywords(content);
-    
-    const similar = knowledgeBase.map(a => {
-      const akws = getKeywords(a.title);
-      const matches = inputKws.filter(kw => akws.includes(kw)).length;
-      return { ...a, score: matches };
-    }).sort((a, b) => b.score - a.score)[0];
-
-    const isMatch = similar && similar.score > 1;
-    
-    return {
-      finalVerdict: isMatch ? similar.label : 'UNVERIFIED',
-      confidence: isMatch ? (60 + (similar.score * 10)) : 45,
-      sentimentVerdict: 'NEUTRAL ANALYSIS',
-      sentimentScore: 5,
-      credibilityStatus: isMatch ? 'KNOWLEDGE_BASE_MATCH' : 'UNKNOWN',
-      credibilityClass: isMatch ? 'trusted' : 'unknown',
-      reasoning: [
-        isMatch ? `Matched with known record: "${similar.title}"` : "No direct matches found in local intelligence core.",
-        "Performing heuristic pattern matching...",
-        "Cross-referencing trusted source list..."
-      ],
-      ruleApplied: 'Local Sentinel Engine (Offline)',
-      similarArticle: isMatch ? similar.title : 'None'
-    };
-  };
-
   const handleAnalyze = async () => {
     if (!content.trim()) return;
     
     setLoading(true);
     setResult(null);
 
-    // If no Webhook, use Local Fallback
-    if (!webhookUrl) {
-      setTimeout(() => {
-        setResult(runLocalAnalysis());
-        setLoading(false);
-      }, 1500);
-      return;
-    }
-
     try {
-      const response = await fetch(webhookUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          headline: content.substring(0, 100),
-          article_text: content,
-          source: source || 'Unknown',
-          date: new Date().toLocaleDateString()
-        })
-      });
+      // 1. RAG Search (Local)
+      const getKeywords = (str) => str.toLowerCase().replace(/[^\w\s]/g, '').split(/\s+/).filter(w => w.length > 4);
+      const inputKws = getKeywords(content);
+      const similar = knowledgeBase.map(a => {
+        const akws = getKeywords(a.title);
+        const matches = inputKws.filter(kw => akws.includes(kw)).length;
+        return { ...a, score: matches };
+      }).sort((a, b) => b.score - a.score).slice(0, 3);
 
-      if (!response.ok) throw new Error('Intelligence Link Offline');
-      
-      const data = await response.json();
-      
-      // 2. Parse the Webhook response (matching your n8n workflow output)
+      const ragContext = similar.map(a => `- "${a.title}" (Label: ${a.label}, Source: ${a.source})`).join('\n');
+
+      // 2. Direct Groq AI Call
+      const prompt = `Analyze this news article for authenticity.
+KNOWLEDGE BASE CONTEXT:
+${ragContext}
+
+Respond ONLY in valid JSON format:
+{
+  "VERDICT": "REAL" or "FAKE",
+  "CONFIDENCE": 0-100,
+  "SENTIMENT_SCORE": 0-10,
+  "SENTIMENT_VERDICT": "NEUTRAL" or "EMOTIONAL" or "MANIPULATIVE",
+  "REASON1": "...",
+  "REASON2": "...",
+  "REASON3": "...",
+  "SIMILAR_ARTICLE": "title of most similar article"
+}
+
+Article: ${content}
+Source: ${source}`;
+
+      const responseRaw = await generateGroqAnalysis(groqApiKey, prompt);
+      const parsed = parseAIResponse(responseRaw);
+      const credibility = evaluateCredibility(source, trustedSources, flaggedSources);
+      const { finalVerdict, rule } = applyLogicRules(parsed, source, credibility);
+
       const finalResult = {
-        finalVerdict: data.verdict || 'UNKNOWN',
-        confidence: parseInt(data.confidence) || parseInt(data.bayes_score) || 50,
-        sentimentVerdict: data.sentiment_verdict || 'NEUTRAL',
-        sentimentScore: data.sentiment_score || 5,
-        credibilityStatus: data.source_status || 'UNKNOWN',
-        credibilityClass: (data.source_status || 'UNKNOWN').toLowerCase(),
-        reasoning: [data.reason1, data.reason2, data.reason3].filter(Boolean),
-        ruleApplied: data.logic_rule_applied || 'Cloud Intelligence Analysis',
-        similarArticle: data.similar_article || 'Cross-referenced via Knowledge Base'
+        ...parsed,
+        finalVerdict,
+        ruleApplied: rule,
+        credibilityStatus: credibility.status,
+        credibilityClass: credibility.class
       };
 
       setResult(finalResult);
@@ -101,7 +78,7 @@ export default function Analyzer({
 
     } catch (e) {
       console.error(e);
-      alert('SENTINEL_ERROR: Intelligence Link Offline. Ensure your n8n Webhook URL is correctly configured in [ SYSTEM_SYNC ] and is currently active.');
+      alert('SYSTEM ERROR: Analysis failed. Ensure your network is active.');
     } finally {
       setLoading(false);
     }
