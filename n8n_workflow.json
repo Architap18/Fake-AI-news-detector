@@ -7,12 +7,84 @@
         "responseMode": "responseNode",
         "options": {}
       },
-      "id": "10433ad2-2769-4ced-a31b-3beda31c0983",
-      "name": "Webhook — Master Input",
+      "id": "webhook-website",
+      "name": "Webhook — Website (Web Search)",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1,
-      "position": [2500, 1200],
+      "position": [2200, 1000],
       "webhookId": "02268fc7-c8ca-4b94-911a-b2d2c451e27f"
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [{ "mode": "everyMinute" }]
+        },
+        "documentId": {
+          "__rl": true,
+          "value": "158k89DoXZYSQ_prFjqFXZN7KzecqVQ-uWlOSBdvvAto",
+          "mode": "list"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Form responses 1",
+          "mode": "list"
+        },
+        "options": {}
+      },
+      "id": "trigger-form",
+      "name": "Trigger — New Form Submission",
+      "type": "n8n-nodes-base.googleSheetsTrigger",
+      "typeVersion": 1,
+      "position": [2200, 1200],
+      "credentials": {
+        "googleSheetsOAuth2Api": { "id": "Q0kwnCWrgmL95E2O", "name": "Google Sheets account" }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "spreadsheet",
+        "operation": "search",
+        "documentId": {
+          "__rl": true,
+          "value": "158k89DoXZYSQ_prFjqFXZN7KzecqVQ-uWlOSBdvvAto",
+          "mode": "list"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Article and Analysis",
+          "mode": "list"
+        },
+        "filtersUi": {
+          "values": [
+            {
+              "columnName": "PREDICTED",
+              "operator": "isEmpty"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fetch-backlog",
+      "name": "Manual — Fetch 100 Backlog Articles",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 3,
+      "position": [2200, 1400],
+      "credentials": {
+        "googleSheetsOAuth2Api": { "id": "Q0kwnCWrgmL95E2O", "name": "Google Sheets account" }
+      }
+    },
+    {
+      "parameters": {
+        "q": "={{ $json.headline || $json[\"News Article Headline\"] }} news authenticity source"
+      },
+      "id": "google-search",
+      "name": "Google Search — Verify Live News",
+      "type": "n8n-nodes-base.googleSearch",
+      "typeVersion": 1,
+      "position": [2500, 1000],
+      "credentials": {
+        "googleSearchApi": { "id": "YnU2XwzR9jV1L0O", "name": "Google Search account" }
+      }
     },
     {
       "parameters": {
@@ -23,33 +95,29 @@
         },
         "sheetName": {
           "__rl": true,
-          "value": "gid=0",
-          "mode": "list",
-          "cachedResultName": "Source Knowledge Map"
+          "value": "Source Knowledge Map",
+          "mode": "list"
         },
         "options": {}
       },
-      "id": "9b8fe36e-7ce0-4f31-9bc8-9a0bd95afa02",
-      "name": "Google Sheets — Fetch Knowledge Base",
+      "id": "fetch-kb",
+      "name": "Knowledge Base",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 3,
       "position": [2800, 1200],
       "credentials": {
-        "googleSheetsOAuth2Api": {
-          "id": "Q0kwnCWrgmL95E2O",
-          "name": "Google Sheets account"
-        }
+        "googleSheetsOAuth2Api": { "id": "Q0kwnCWrgmL95E2O", "name": "Google Sheets account" }
       }
     },
     {
       "parameters": {
-        "jsCode": "// UNIVERSAL RAG MATCHER (Website + Google Form)\nconst inputData = $node[\"Webhook — Master Input\"].json;\n\n// Normalize data from Website OR Apps Script\nconst headline = inputData.headline || (inputData[\"News Article Headline\"] ? inputData[\"News Article Headline\"][0] : \"\");\nconst article_text = inputData.article_text || (inputData[\"Article Text or URL...\"] ? inputData[\"Article Text or URL...\"][0] : headline);\nconst source_name = inputData.source || (inputData[\"Source / Publication Name\"] ? inputData[\"Source / Publication Name\"][0] : \"Unknown\");\n\nconst kb = items.map(i => i.json);\nconst input = (headline || article_text).toLowerCase();\n\n// Similarity Match\nconst matches = kb.map(a => {\n  const title = (a[\"Source Name\"] || a.title || \"\").toLowerCase();\n  const score = input.split(' ').filter(word => title.includes(word) && word.length > 4).length;\n  return { ...a, similarity_score: score };\n}).sort((a, b) => b.similarity_score - a.similarity_score);\n\nreturn matches.slice(0, 3).map(m => ({\n  json: {\n    ...m,\n    orig_headline: headline,\n    orig_text: article_text,\n    orig_source: source_name\n  }\n}));"
+        "jsCode": "// UNIVERSAL NORMALIZER\nconst searchData = $node[\"Google Search — Verify Live News\"]?.json || {};\nconst formInput = $node[\"Trigger — New Form Submission\"]?.json || {};\nconst backlogInput = $node[\"Manual — Fetch 100 Backlog Articles\"]?.json || {};\nconst webInput = $node[\"Webhook — Website (Web Search)\"]?.json || {};\n\nconst headline = webInput.headline || formInput[\"News Article Headline\"] || backlogInput[\"ARTICLE TITLE\"] || \"\";\nconst text = webInput.article_text || formInput[\"Article Text or URL...\"] || backlogInput[\"ARTICLE CONTENT\"] || headline;\n\nreturn { \n  headline, \n  text, \n  search_results: searchData.snippets || \"No live search data found\",\n  is_backlog: !!backlogInput[\"ARTICLE TITLE\"],\n  row_number: backlogInput.row_number || formInput.row_number\n};"
       },
-      "id": "5fb5e7b6-306a-4b9a-a163-54463e4a6ebb",
-      "name": "Code — RAG Matcher",
+      "id": "normalizer",
+      "name": "Code — Normalizer",
       "type": "n8n-nodes-base.code",
       "typeVersion": 1,
-      "position": [3000, 1200]
+      "position": [3100, 1200]
     },
     {
       "parameters": {
@@ -58,36 +126,23 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            {
-              "name": "Authorization",
-              "value": "Bearer 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"
-            }
+            { "name": "Authorization", "value": "Bearer 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" }
           ]
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{\nJSON.stringify({\n  \"model\": \"llama-3.1-8b-instant\",\n  \"messages\": [\n    { \"role\": \"system\", \"content\": \"You are a JSON-only API. Analyze news for authenticity.\" },\n    { \"role\": \"user\", \"content\": `Analyze this article.\\nContext: ${$items(\"Code — RAG Matcher\").map(i => i.json[\"Source Name\"]).join(', ')}\\nText: ${$node[\"Code — RAG Matcher\"].json.orig_text}` }\n  ],\n  \"response_format\": { \"type\": \"json_object\" }\n})\n}}\n",
+        "jsonBody": "={{\nJSON.stringify({\n  \"model\": \"llama-3.1-8b-instant\",\n  \"messages\": [\n    { \"role\": \"system\", \"content\": \"You are a Fake News Detective. Use search data and knowledge base to give a verdict.\" },\n    { \"role\": \"user\", \"content\": `Article: ${$node[\"Code — Normalizer\"].json.headline}\\nSearch Data: ${$node[\"Code — Normalizer\"].json.search_results}\\nRespond in JSON: {verdict, confidence, reasoning, source_name}` }\n  ],\n  \"response_format\": { \"type\": \"json_object\" }\n})\n}}\n",
         "options": {}
       },
-      "id": "886dbce5-be1e-4928-a84f-6abf3998ce6d",
+      "id": "groq-ai",
       "name": "Groq — AI Analysis",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
-      "position": [3250, 1200]
+      "position": [3400, 1200]
     },
     {
       "parameters": {
-        "jsCode": "const ai = JSON.parse($node[\"Groq — AI Analysis\"].json.choices[0].message.content);\nconst source = ($node[\"Code — RAG Matcher\"].json.orig_source || \"\").toUpperCase();\nlet verdict = ai.verdict;\nlet rule = \"AI Cloud Intelligence\";\n\nif (source.includes('FABRICATED')) { verdict = 'FAKE'; rule = 'Rule 1: Blacklisted Source'; }\nelse if (ai.confidence > 80) { rule = 'Rule 2: High Confidence AI'; }\n\nreturn { ...ai, verdict, rule_applied: rule };"
-      },
-      "id": "05ccafc0-db57-4198-8aad-f2ca0d37d79d",
-      "name": "Code — Logic Engine",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 1,
-      "position": [3450, 1200]
-    },
-    {
-      "parameters": {
-        "operation": "append",
+        "operation": "update",
         "documentId": {
           "__rl": true,
           "value": "158k89DoXZYSQ_prFjqFXZN7KzecqVQ-uWlOSBdvvAto",
@@ -95,50 +150,45 @@
         },
         "sheetName": {
           "__rl": true,
-          "value": "gid=0",
-          "mode": "list",
-          "cachedResultName": "Article and Analysis"
+          "value": "Article and Analysis",
+          "mode": "list"
         },
+        "rowNumber": "={{ $node[\"Code — Normalizer\"].json.row_number }}",
         "dataMode": "mapEachColumn",
         "fieldsUi": {
           "values": [
-            { "columnName": "ARTICLE TITLE", "fieldValue": "={{$node[\"Code — RAG Matcher\"].json.orig_headline}}" },
-            { "columnName": "ARTICLE CONTENT", "fieldValue": "={{$node[\"Code — RAG Matcher\"].json.orig_text}}" },
-            { "columnName": "SOURCES", "fieldValue": "={{$node[\"Code — RAG Matcher\"].json.orig_source}}" },
-            { "columnName": "PREDICTED", "fieldValue": "={{$node[\"Code — Logic Engine\"].json.verdict}}" },
-            { "columnName": "BAYES CONFIDENCE SCORE (%)", "fieldValue": "={{$node[\"Code — Logic Engine\"].json.confidence}}" },
-            { "columnName": "LOGIC RULE VERDICT", "fieldValue": "={{$node[\"Code — Logic Engine\"].json.rule_applied}}" }
+            { "columnName": "PREDICTED", "fieldValue": "={{ JSON.parse($json.choices[0].message.content).verdict }}" },
+            { "columnName": "BAYES CONFIDENCE SCORE (%)", "fieldValue": "={{ JSON.parse($json.choices[0].message.content).confidence }}" },
+            { "columnName": "LOGIC RULE VERDICT", "fieldValue": "={{ JSON.parse($json.choices[0].message.content).reasoning }}" }
           ]
         },
         "options": {}
       },
-      "id": "678c22cf-a1dd-4caa-9166-26a171b5faae",
-      "name": "Google Sheets — Log History",
+      "id": "update-sheet",
+      "name": "Google Sheets — Auto-Fill Result",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 3,
       "position": [3700, 1200],
       "credentials": {
-        "googleSheetsOAuth2Api": {
-          "id": "Q0kwnCWrgmL95E2O",
-          "name": "Google Sheets account"
-        }
+        "googleSheetsOAuth2Api": { "id": "Q0kwnCWrgmL95E2O", "name": "Google Sheets account" }
       }
     },
     {
       "parameters": { "options": {} },
-      "id": "52a6035d-8ffb-4774-976e-976c15f796ff",
-      "name": "Respond — Return Result",
+      "id": "respond-web",
+      "name": "Respond — Website",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
-      "position": [3950, 1200]
+      "position": [3900, 1000]
     }
   ],
   "connections": {
-    "Webhook — Master Input": { "main": [[{ "node": "Google Sheets — Fetch Knowledge Base", "type": "main", "index": 0 }]] },
-    "Google Sheets — Fetch Knowledge Base": { "main": [[{ "node": "Code — RAG Matcher", "type": "main", "index": 0 }]] },
-    "Code — RAG Matcher": { "main": [[{ "node": "Groq — AI Analysis", "type": "main", "index": 0 }]] },
-    "Groq — AI Analysis": { "main": [[{ "node": "Code — Logic Engine", "type": "main", "index": 0 }]] },
-    "Code — Logic Engine": { "main": [[{ "node": "Google Sheets — Log History", "type": "main", "index": 0 }]] },
-    "Google Sheets — Log History": { "main": [[{ "node": "Respond — Return Result", "type": "main", "index": 0 }]] }
+    "Webhook — Website (Web Search)": { "main": [[{ "node": "Google Search — Verify Live News", "type": "main", "index": 0 }]] },
+    "Google Search — Verify Live News": { "main": [[{ "node": "Code — Normalizer", "type": "main", "index": 0 }]] },
+    "Trigger — New Form Submission": { "main": [[{ "node": "Code — Normalizer", "type": "main", "index": 0 }]] },
+    "Manual — Fetch 100 Backlog Articles": { "main": [[{ "node": "Code — Normalizer", "type": "main", "index": 0 }]] },
+    "Code — Normalizer": { "main": [[{ "node": "Groq — AI Analysis", "type": "main", "index": 0 }]] },
+    "Groq — AI Analysis": { "main": [[{ "node": "Google Sheets — Auto-Fill Result", "type": "main", "index": 0 }]] },
+    "Google Sheets — Auto-Fill Result": { "main": [[{ "node": "Respond — Website", "type": "main", "index": 0 }]] }
   }
 }
