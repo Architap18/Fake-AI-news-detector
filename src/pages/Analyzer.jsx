@@ -34,7 +34,6 @@ export default function Analyzer({
       setIsUrl(false);
     }
   }, [content]);
-
   const handleAnalyze = async (e) => {
     if (e) e.preventDefault();
     if (!content.trim()) return;
@@ -54,28 +53,33 @@ export default function Analyzer({
           messages: [
             {
               role: "system",
-              content: `You are FakeShield AI Forensic Analyst. 
-              TASKS: 
-              1. Cross-reference with credible global news agencies (Reuters, AP, BBC, etc.).
-              2. Identify specific sources reporting this.
-              3. Provide detailed step-by-step reasoning.
+              content: `You are FakeShield AI. You MUST categorize news into ONE of these 5 verdicts:
+              - VERIFIED REAL
+              - LIKELY REAL
+              - SUSPICIOUS
+              - LIKELY FAKE
+              - CONFIRMED FAKE
+              
+              CRITICAL: The "verdict" field MUST ONLY be "VERIFIED REAL" or "CONFIRMED FAKE" or "SUSPICIOUS". 
+              
               Respond ONLY in JSON: 
               { 
-                "verdict": "string", 
-                "confidence": 0-100, 
-                "verified_sources": ["Reuters", "BBC", "Official Handle"],
-                "suspicious_sources": ["Unknown Blog", "Propaganda Site"],
-                "detailed_reasoning": ["Step 1:...", "Step 2:..."],
+                "verdict": "VERIFIED REAL", 
+                "headline_summary": "Short headline",
+                "confidence": 95, 
+                "verified_sources": ["..."],
+                "suspicious_sources": ["..."],
+                "detailed_reasoning": ["..."],
                 "green_flags": ["..."],
                 "red_flags": ["..."],
-                "ai_score": 0-100,
-                "emotional_bias": "string",
+                "ai_score": 5,
+                "emotional_bias": "LOW",
                 "evidence_matrix": [{"claim": "...", "status": "..."}]
               }`
             },
             {
               role: "user",
-              content: `Full Forensic & Source Scan: ${content}`
+              content: `Strict Forensic Scan: ${content}`
             }
           ],
           response_format: { type: "json_object" }
@@ -87,7 +91,7 @@ export default function Analyzer({
 
       setResult({
         ...analysis,
-        ruleApplied: 'Multi-Source Cross-Verification'
+        ruleApplied: 'Strict Categorical Logic'
       });
 
       addHistoryItem({
@@ -108,9 +112,17 @@ export default function Analyzer({
   };
 
   const getVerdictClass = (v) => {
-    if (v.includes('REAL')) return 'real';
-    if (v.includes('FAKE')) return 'fake';
+    const verdict = v.toUpperCase();
+    if (verdict.includes('REAL')) return 'real';
+    if (verdict.includes('FAKE')) return 'fake';
     return 'suspicious';
+  };
+
+  const getStatusBadge = (v) => {
+    const verdict = v.toUpperCase();
+    if (verdict.includes('REAL') || verdict.includes('CONFIRMED') || verdict.includes('VERIFIED')) return 'REAL';
+    if (verdict.includes('FAKE') || verdict.includes('FALSE') || verdict.includes('FABRICATED')) return 'FAKE';
+    return 'SUSPICIOUS';
   };
 
   return (
@@ -118,12 +130,12 @@ export default function Analyzer({
       <div className="input-card glass-panel">
         {loading && <div className="scanner-overlay"></div>}
         <h3 className="scanning-text" style={{ marginBottom: '1rem', fontSize: '0.9rem' }}>
-          {loading ? '> CROSS_REFERENCING_SOURCES...' : '> SOURCE_VERIFICATION_RADAR_v4'}
+          {loading ? '> CROSS_REFERENCING_SOURCES...' : '> FAKESHIELD_SCANNER_v5'}
         </h3>
         <textarea 
           value={content} 
           onChange={e => setContent(e.target.value)} 
-          placeholder="// PASTE NEWS FOR SOURCE CROSS-CHECK..."
+          placeholder="// PASTE NEWS FOR CATEGORICAL SCAN..."
           style={{ width: '100%', minHeight: '200px' }}
         ></textarea>
         
@@ -134,7 +146,7 @@ export default function Analyzer({
             disabled={loading}
             style={{ width: '100%', padding: '1.2rem' }}
           >
-            {loading ? 'SCRAPING GLOBAL INTEL...' : 'EXECUTE SOURCE SCAN'}
+            {loading ? 'ANALYZING PATTERNS...' : 'EXECUTE SCAN'}
           </button>
         </div>
       </div>
@@ -142,14 +154,25 @@ export default function Analyzer({
       {result && (
         <div className="results-container" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           
-          <div className="glass-panel" style={{ padding: '2rem', textAlign: 'center', borderTop: `4px solid var(--${getVerdictClass(result.verdict)})` }}>
-            <h2 className={`verdict-text ${getVerdictClass(result.verdict)}`} style={{ fontSize: '2.5rem' }}>
+          <div className="glass-panel" style={{ padding: '2rem', textAlign: 'center', position: 'relative' }}>
+            <div className={`status-badge ${getVerdictClass(result.verdict)}`} style={{ 
+              fontSize: '4rem', 
+              fontWeight: '900', 
+              letterSpacing: '5px',
+              textShadow: `0 0 30px var(--${getVerdictClass(result.verdict)})`
+            }}>
+              {getStatusBadge(result.verdict)}
+            </div>
+            <h2 style={{ fontSize: '1.2rem', marginTop: '1rem', opacity: 0.8, color: 'var(--text)' }}>
               {result.verdict}
             </h2>
-            <div className="meter-bar" style={{ margin: '1rem auto', maxWidth: '300px' }}>
+            <p style={{ fontSize: '0.8rem', color: 'var(--muted)', marginTop: '0.5rem', fontStyle: 'italic' }}>
+              "{result.headline_summary}"
+            </p>
+            <div className="meter-bar" style={{ margin: '1.5rem auto', maxWidth: '300px' }}>
               <div className="meter-fill" style={{ width: `${result.confidence}%` }}></div>
             </div>
-            <p style={{ color: 'var(--muted)', fontSize: '0.8rem' }}>CONFIDENCE_LEVEL: {result.confidence}%</p>
+            <p style={{ color: 'var(--muted)', fontSize: '0.8rem' }}>AI_CONFIDENCE_RATING: {result.confidence}%</p>
           </div>
 
           <div className="glass-panel" style={{ padding: '1.5rem' }}>
