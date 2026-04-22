@@ -55,24 +55,24 @@ export default function Analyzer({
           messages: [
             {
               role: "system",
-              content: `You are FakeShield Intelligence Terminal. Perform a deep forensic analysis. 
-              Analyze: 1. Linguistic Patterns (AI-like text), 2. Emotional Bias, 3. Specific Claims, 4. Source Credibility.
+              content: `You are FakeShield AI. Give a clear, simple expert verdict on whether this news is REAL or FAKE. 
+              Explain it in simple human terms that anyone can understand.
               Respond ONLY in JSON: 
               { 
                 "verdict": "REAL/FAKE", 
                 "confidence": 0-100, 
-                "reasoning": ["..."], 
-                "source_name": "...", 
+                "reasoning": ["Clear reason 1", "Clear reason 2"], 
+                "source_name": "Source Name", 
                 "ai_score": 0-100,
                 "emotional_bias": "LOW/HIGH",
                 "evidence_matrix": [
-                  {"claim": "...", "status": "VERIFIED/SUSPICIOUS"}
+                  {"claim": "Key Claim", "status": "VERIFIED/SUSPICIOUS"}
                 ]
               }`
             },
             {
               role: "user",
-              content: `Forensic scan requested for: ${content}`
+              content: `Is this real or fake? Analyze this: ${content}`
             }
           ],
           response_format: { type: "json_object" }
@@ -85,7 +85,7 @@ export default function Analyzer({
       const finalResult = {
         ...analysis,
         timestamp: new Date().toLocaleTimeString(),
-        ruleApplied: 'Forensic AI Pattern Matching'
+        ruleApplied: 'Forensic Intelligence Analysis'
       };
 
       setResult(finalResult);
@@ -94,14 +94,14 @@ export default function Analyzer({
         id: Date.now(),
         date: new Date().toLocaleDateString(),
         context: content.substring(0, 60) + '...',
-        source: analysis.source_name || 'Detected',
+        source: analysis.source_name || 'Expert Scan',
         verdict: analysis.verdict,
         confidence: analysis.confidence
       });
 
     } catch (e) {
       console.error(e);
-      alert('SENTINEL_ERROR: Forensic Link Interrupted.');
+      alert('SCAN_ERROR: Intelligence Link Interrupted.');
     } finally {
       setLoading(false);
     }
@@ -112,30 +112,30 @@ export default function Analyzer({
       <div className="input-card glass-panel">
         {loading && <div className="scanner-overlay"></div>}
         <h3 className="scanning-text" style={{ marginBottom: '1rem', fontSize: '0.9rem' }}>
-          {loading ? '> INTEL_CORE_SCANNING...' : '> READY_FOR_INPUT'}
+          {loading ? '> ANALYZING_CREDIBILITY...' : '> NEWS_ARTICLE_SCANNER'}
         </h3>
         <textarea 
           value={content} 
           onChange={e => setContent(e.target.value)} 
-          placeholder="// PASTE INTEL HERE FOR FORENSIC SCAN..."
+          placeholder="// PASTE NEWS ARTICLE OR HEADLINE HERE..."
+          style={{ width: '100%', minHeight: '250px' }}
         ></textarea>
         
-        <div style={{ marginTop: '1.5rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
-          <input 
-            type="text" 
-            value={source} 
-            onChange={e => setSource(e.target.value)} 
-            placeholder="// SOURCE [OPTIONAL]" 
-            className="terminal-input"
-            style={{ flex: 1, background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border)', padding: '0.8rem', color: 'var(--primary)', borderRadius: '8px' }}
-          />
+        <div style={{ marginTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <button 
             onClick={handleAnalyze} 
             className={`btn-primary ${loading ? 'scanning' : ''}`}
             disabled={loading}
+            style={{ width: '100%', padding: '1.2rem', fontSize: '1.1rem' }}
           >
-            {loading ? 'INITIALIZING SCAN...' : 'EXECUTE SCAN'}
+            {loading ? 'SCANNIG DATA...' : 'EXECUTE SCAN'}
           </button>
+          
+          <div style={{ display: 'flex', justifyContent: 'center', opacity: 0.5 }}>
+            <span style={{ fontSize: '0.7rem', color: 'var(--muted)', fontFamily: 'var(--font-display)' }}>
+              POWERED BY FAKESHIELD INTELLIGENCE CORE
+            </span>
+          </div>
         </div>
       </div>
 
