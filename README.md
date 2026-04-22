@@ -33,9 +33,9 @@ Instead of a binary result, FakeShield provides a 5-level confidence verdict:
 🔴 CONFIRMED FAKE
 
 ### 🔍 Source Verification Radar
-The terminal explicitly identifies and categorizes sources reporting the news:
-- **Trusted Organizations**: Verified against a database of global agencies (Reuters, BBC, AP).
-- **Suspicious Entities**: Flagged for propaganda patterns or lack of citation history.
+Identifies trusted sources (Reuters, BBC, AP)
+Flags suspicious or unverified publishers
+Detects lack of citation patterns
 
 ### 🧠 Forensic AI Pattern Detection
 Utilizing **Llama 3.1 via Groq**, the engine analyzes:
