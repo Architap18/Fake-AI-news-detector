@@ -81,10 +81,7 @@
       "name": "Google Search — Verify Live News",
       "type": "n8n-nodes-base.googleSearch",
       "typeVersion": 1,
-      "position": [2500, 1000],
-      "credentials": {
-        "googleSearchApi": { "id": "YnU2XwzR9jV1L0O", "name": "Google Search account" }
-      }
+      "position": [2500, 1000]
     },
     {
       "parameters": {
