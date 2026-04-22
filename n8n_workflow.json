@@ -8,7 +8,7 @@
         "options": {}
       },
       "id": "webhook-website",
-      "name": "Webhook — Website (Web Search)",
+      "name": "Webhook — Website",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1,
       "position": [2200, 1000],
@@ -75,16 +75,6 @@
     },
     {
       "parameters": {
-        "q": "={{ $json.headline || $json[\"News Article Headline\"] }} news authenticity source"
-      },
-      "id": "google-search",
-      "name": "Google Search — Verify Live News",
-      "type": "n8n-nodes-base.googleSearch",
-      "typeVersion": 1,
-      "position": [2500, 1000]
-    },
-    {
-      "parameters": {
         "documentId": {
           "__rl": true,
           "value": "158k89DoXZYSQ_prFjqFXZN7KzecqVQ-uWlOSBdvvAto",
@@ -101,20 +91,20 @@
       "name": "Knowledge Base",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 3,
-      "position": [2800, 1200],
+      "position": [2600, 1200],
       "credentials": {
         "googleSheetsOAuth2Api": { "id": "Q0kwnCWrgmL95E2O", "name": "Google Sheets account" }
       }
     },
     {
       "parameters": {
-        "jsCode": "// UNIVERSAL NORMALIZER\nconst searchData = $node[\"Google Search — Verify Live News\"]?.json || {};\nconst formInput = $node[\"Trigger — New Form Submission\"]?.json || {};\nconst backlogInput = $node[\"Manual — Fetch 100 Backlog Articles\"]?.json || {};\nconst webInput = $node[\"Webhook — Website (Web Search)\"]?.json || {};\n\nconst headline = webInput.headline || formInput[\"News Article Headline\"] || backlogInput[\"ARTICLE TITLE\"] || \"\";\nconst text = webInput.article_text || formInput[\"Article Text or URL...\"] || backlogInput[\"ARTICLE CONTENT\"] || headline;\n\nreturn { \n  headline, \n  text, \n  search_results: searchData.snippets || \"No live search data found\",\n  is_backlog: !!backlogInput[\"ARTICLE TITLE\"],\n  row_number: backlogInput.row_number || formInput.row_number\n};"
+        "jsCode": "// UNIVERSAL NORMALIZER\nconst formInput = $node[\"Trigger — New Form Submission\"]?.json || {};\nconst backlogInput = $node[\"Manual — Fetch 100 Backlog Articles\"]?.json || {};\nconst webInput = $node[\"Webhook — Website\"]?.json || {};\n\nconst headline = webInput.headline || formInput[\"News Article Headline\"] || backlogInput[\"ARTICLE TITLE\"] || \"\";\nconst text = webInput.article_text || formInput[\"Article Text or URL...\"] || backlogInput[\"ARTICLE CONTENT\"] || headline;\n\nreturn { \n  headline, \n  text, \n  row_number: backlogInput.row_number || formInput.row_number\n};"
       },
       "id": "normalizer",
       "name": "Code — Normalizer",
       "type": "n8n-nodes-base.code",
       "typeVersion": 1,
-      "position": [3100, 1200]
+      "position": [2900, 1200]
     },
     {
       "parameters": {
@@ -128,14 +118,14 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{\nJSON.stringify({\n  \"model\": \"llama-3.1-8b-instant\",\n  \"messages\": [\n    { \"role\": \"system\", \"content\": \"You are a Fake News Detective. Use search data and knowledge base to give a verdict.\" },\n    { \"role\": \"user\", \"content\": `Article: ${$node[\"Code — Normalizer\"].json.headline}\\nSearch Data: ${$node[\"Code — Normalizer\"].json.search_results}\\nRespond in JSON: {verdict, confidence, reasoning, source_name}` }\n  ],\n  \"response_format\": { \"type\": \"json_object\" }\n})\n}}\n",
+        "jsonBody": "={{\nJSON.stringify({\n  \"model\": \"llama-3.1-8b-instant\",\n  \"messages\": [\n    { \"role\": \"system\", \"content\": \"You are a Fake News Detective. Use your internal knowledge and the trusted source map to give a verdict.\" },\n    { \"role\": \"user\", \"content\": `Article: ${$node[\"Code — Normalizer\"].json.headline}\\nTrusted Sources: ${$items(\"Knowledge Base\").map(i => i.json[\"Source Name\"]).join(', ')}\\nRespond in JSON: {verdict, confidence, reasoning, source_name}` }\n  ],\n  \"response_format\": { \"type\": \"json_object\" }\n})\n}}\n",
         "options": {}
       },
       "id": "groq-ai",
       "name": "Groq — AI Analysis",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
-      "position": [3400, 1200]
+      "position": [3200, 1200]
     },
     {
       "parameters": {
@@ -165,7 +155,7 @@
       "name": "Google Sheets — Auto-Fill Result",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 3,
-      "position": [3700, 1200],
+      "position": [3500, 1200],
       "credentials": {
         "googleSheetsOAuth2Api": { "id": "Q0kwnCWrgmL95E2O", "name": "Google Sheets account" }
       }
@@ -176,14 +166,14 @@
       "name": "Respond — Website",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
-      "position": [3900, 1000]
+      "position": [3800, 1000]
     }
   ],
   "connections": {
-    "Webhook — Website (Web Search)": { "main": [[{ "node": "Google Search — Verify Live News", "type": "main", "index": 0 }]] },
-    "Google Search — Verify Live News": { "main": [[{ "node": "Code — Normalizer", "type": "main", "index": 0 }]] },
-    "Trigger — New Form Submission": { "main": [[{ "node": "Code — Normalizer", "type": "main", "index": 0 }]] },
-    "Manual — Fetch 100 Backlog Articles": { "main": [[{ "node": "Code — Normalizer", "type": "main", "index": 0 }]] },
+    "Webhook — Website": { "main": [[{ "node": "Knowledge Base", "type": "main", "index": 0 }]] },
+    "Trigger — New Form Submission": { "main": [[{ "node": "Knowledge Base", "type": "main", "index": 0 }]] },
+    "Manual — Fetch 100 Backlog Articles": { "main": [[{ "node": "Knowledge Base", "type": "main", "index": 0 }]] },
+    "Knowledge Base": { "main": [[{ "node": "Code — Normalizer", "type": "main", "index": 0 }]] },
     "Code — Normalizer": { "main": [[{ "node": "Groq — AI Analysis", "type": "main", "index": 0 }]] },
     "Groq — AI Analysis": { "main": [[{ "node": "Google Sheets — Auto-Fill Result", "type": "main", "index": 0 }]] },
     "Google Sheets — Auto-Fill Result": { "main": [[{ "node": "Respond — Website", "type": "main", "index": 0 }]] }
