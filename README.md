@@ -1,6 +1,6 @@
 # 🛡️ FakeShield AI: Forensic Intelligence Terminal
 
-[![Vercel](https://img.shields.io/badge/Vercel-Live_Demo-black?style=for-the-badge&logo=vercel)](https://fake-ai-news-detector.vercel.app/)
+Live Demo-[![Vercel](https://img.shields.io/badge/Vercel-Live_Demo-black?style=for-the-badge&logo=vercel)](https://fake-ai-news-detector.vercel.app/)
 [![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://reactjs.org/)
 [![n8n](https://img.shields.io/badge/n8n-Automation-EA4335?style=for-the-badge&logo=n8n&logoColor=white)](https://n8n.io/)
 [![Groq](https://img.shields.io/badge/Groq-AI_Inference-f3d03e?style=for-the-badge&logo=lightning&logoColor=black)](https://groq.com/)
