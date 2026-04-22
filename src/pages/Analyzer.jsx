@@ -54,24 +54,28 @@ export default function Analyzer({
           messages: [
             {
               role: "system",
-              content: `You are FakeShield AI. Provide a nuanced forensic verdict.
-              Verdict Options: "VERIFIED REAL", "LIKELY REAL", "SUSPICIOUS", "LIKELY FAKE", "CONFIRMED FAKE".
-              Provide: 1. Green Flags (evidence for real), 2. Red Flags (evidence for fake).
+              content: `You are FakeShield AI Forensic Analyst. 
+              TASKS: 
+              1. Cross-reference with credible global news agencies (Reuters, AP, BBC, etc.).
+              2. Identify specific sources reporting this.
+              3. Provide detailed step-by-step reasoning.
               Respond ONLY in JSON: 
               { 
                 "verdict": "string", 
                 "confidence": 0-100, 
+                "verified_sources": ["Reuters", "BBC", "Official Handle"],
+                "suspicious_sources": ["Unknown Blog", "Propaganda Site"],
+                "detailed_reasoning": ["Step 1:...", "Step 2:..."],
                 "green_flags": ["..."],
                 "red_flags": ["..."],
-                "source_name": "...", 
                 "ai_score": 0-100,
-                "emotional_bias": "LOW/MEDIUM/HIGH",
+                "emotional_bias": "string",
                 "evidence_matrix": [{"claim": "...", "status": "..."}]
               }`
             },
             {
               role: "user",
-              content: `Forensic nuanced scan: ${content}`
+              content: `Full Forensic & Source Scan: ${content}`
             }
           ],
           response_format: { type: "json_object" }
@@ -83,14 +87,14 @@ export default function Analyzer({
 
       setResult({
         ...analysis,
-        ruleApplied: 'Spectrum Confidence Logic'
+        ruleApplied: 'Multi-Source Cross-Verification'
       });
 
       addHistoryItem({
         id: Date.now(),
         date: new Date().toLocaleDateString(),
         context: content.substring(0, 60) + '...',
-        source: analysis.source_name || 'Expert Scan',
+        source: analysis.verified_sources?.[0] || 'Expert Scan',
         verdict: analysis.verdict,
         confidence: analysis.confidence
       });
@@ -114,12 +118,12 @@ export default function Analyzer({
       <div className="input-card glass-panel">
         {loading && <div className="scanner-overlay"></div>}
         <h3 className="scanning-text" style={{ marginBottom: '1rem', fontSize: '0.9rem' }}>
-          {loading ? '> SPECTRUM_ANALYSIS_IN_PROGRESS...' : '> FORENSIC_SCANNER_v3'}
+          {loading ? '> CROSS_REFERENCING_SOURCES...' : '> SOURCE_VERIFICATION_RADAR_v4'}
         </h3>
         <textarea 
           value={content} 
           onChange={e => setContent(e.target.value)} 
-          placeholder="// PASTE NEWS FOR NUANCED SCAN..."
+          placeholder="// PASTE NEWS FOR SOURCE CROSS-CHECK..."
           style={{ width: '100%', minHeight: '200px' }}
         ></textarea>
         
@@ -130,7 +134,7 @@ export default function Analyzer({
             disabled={loading}
             style={{ width: '100%', padding: '1.2rem' }}
           >
-            {loading ? 'CALCULATING PROBABILITY...' : 'EXECUTE SCAN'}
+            {loading ? 'SCRAPING GLOBAL INTEL...' : 'EXECUTE SOURCE SCAN'}
           </button>
         </div>
       </div>
@@ -148,19 +152,34 @@ export default function Analyzer({
             <p style={{ color: 'var(--muted)', fontSize: '0.8rem' }}>CONFIDENCE_LEVEL: {result.confidence}%</p>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-            <div className="glass-panel" style={{ borderLeft: '4px solid var(--safe)', padding: '1rem' }}>
-              <h4 style={{ color: 'var(--safe)', fontSize: '0.75rem', marginBottom: '0.5rem' }}>GREEN_FLAGS (AUTHENTICITY)</h4>
-              <ul style={{ listStyle: 'none', fontSize: '0.8rem', padding: 0 }}>
-                {result.green_flags.map((f, i) => <li key={i} style={{ marginBottom: '0.3rem' }}>+ {f}</li>)}
-              </ul>
+          <div className="glass-panel" style={{ padding: '1.5rem' }}>
+            <h4 style={{ color: 'var(--primary)', fontSize: '0.8rem', marginBottom: '1rem' }}>SOURCE_RADAR_DETECTION</h4>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div>
+                <p style={{ fontSize: '0.7rem', color: 'var(--safe)', marginBottom: '0.5rem' }}>TRUSTED_ORGANIZATIONS:</p>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                  {result.verified_sources?.map((s, i) => <span key={i} className="pill verified" style={{ fontSize: '0.6rem' }}>{s}</span>)}
+                </div>
+              </div>
+              <div>
+                <p style={{ fontSize: '0.7rem', color: 'var(--danger)', marginBottom: '0.5rem' }}>SUSPICIOUS_ENTITIES:</p>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                  {result.suspicious_sources?.map((s, i) => <span key={i} className="pill alert" style={{ fontSize: '0.6rem' }}>{s}</span>)}
+                </div>
+              </div>
             </div>
-            <div className="glass-panel" style={{ borderLeft: '4px solid var(--danger)', padding: '1rem' }}>
-              <h4 style={{ color: 'var(--danger)', fontSize: '0.75rem', marginBottom: '0.5rem' }}>RED_FLAGS (DECEPTION)</h4>
-              <ul style={{ listStyle: 'none', fontSize: '0.8rem', padding: 0 }}>
-                {result.red_flags.map((f, i) => <li key={i} style={{ marginBottom: '0.3rem' }}>- {f}</li>)}
-              </ul>
-            </div>
+          </div>
+
+          <div className="glass-panel" style={{ padding: '1.5rem' }}>
+            <h4 style={{ color: 'var(--primary)', fontSize: '0.8rem', marginBottom: '1rem' }}>DETAILED_FORENSIC_REASONING</h4>
+            <ul style={{ listStyle: 'none', padding: 0, fontSize: '0.85rem' }}>
+              {result.detailed_reasoning?.map((r, i) => (
+                <li key={i} style={{ marginBottom: '0.8rem', display: 'flex', gap: '0.5rem' }}>
+                  <span style={{ color: 'var(--primary)' }}>[{i+1}]</span>
+                  <span>{r}</span>
+                </li>
+              ))}
+            </ul>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
