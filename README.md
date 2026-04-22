@@ -21,11 +21,16 @@ Live Demo-[![Vercel](https://img.shields.io/badge/Vercel-Live_Demo-black?style=f
 
 ---
 
-## 🚀 Key Features
+###🚀 Key Features
+📡 Spectrum Verdict System
 
-### 📡 Spectrum Verdicts (Confidence Spectrum)
-Unlike traditional binary "Real/Fake" tools, FakeShield provides a **nuanced 5-level verdict system**:
-- `VERIFIED REAL` | `LIKELY REAL` | `SUSPICIOUS` | `LIKELY FAKE` | `CONFIRMED FAKE`
+Instead of a binary result, FakeShield provides a 5-level confidence verdict:
+
+✅ VERIFIED REAL
+🟢 LIKELY REAL
+🟡 SUSPICIOUS
+🟠 LIKELY FAKE
+🔴 CONFIRMED FAKE
 
 ### 🔍 Source Verification Radar
 The terminal explicitly identifies and categorizes sources reporting the news:
