@@ -8,67 +8,24 @@
         "options": {}
       },
       "id": "10433ad2-2769-4ced-a31b-3beda31c0983",
-      "name": "Webhook — Form Submission",
+      "name": "Webhook — Master Input",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1,
-      "position": [
-        2544,
-        1120
-      ],
+      "position": [2500, 1200],
       "webhookId": "02268fc7-c8ca-4b94-911a-b2d2c451e27f"
     },
     {
       "parameters": {
-        "pollTimes": {
-          "item": [
-            {
-              "mode": "everyMinute"
-            }
-          ]
-        },
         "documentId": {
           "__rl": true,
           "value": "158k89DoXZYSQ_prFjqFXZN7KzecqVQ-uWlOSBdvvAto",
-          "mode": "list",
-          "cachedResultName": "FakeShield — News Article Submission (Responses)",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/158k89DoXZYSQ_prFjqFXZN7KzecqVQ-uWlOSBdvvAto/edit"
+          "mode": "list"
         },
         "sheetName": {
           "__rl": true,
-          "value": "Form responses 1",
+          "value": "gid=0",
           "mode": "list",
-          "cachedResultName": "Form responses 1"
-        },
-        "options": {}
-      },
-      "id": "f4567-google-sheets-trigger",
-      "name": "Google Sheets Trigger (Forms)",
-      "type": "n8n-nodes-base.googleSheetsTrigger",
-      "typeVersion": 1,
-      "position": [
-        2544,
-        1300
-      ],
-      "credentials": {
-        "googleSheetsOAuth2Api": {
-          "id": "Q0kwnCWrgmL95E2O",
-          "name": "Google Sheets account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "documentId": {
-          "__rl": true,
-          "value": "16AG4TGsOaeAzisNPusuQUE4G3yQsuj5J2Koh_eyeHxU",
-          "mode": ""
-        },
-        "sheetName": {
-          "__rl": true,
-          "value": 1732061316,
-          "mode": "list",
-          "cachedResultName": "Source Knowledge Map",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/16AG4TGsOaeAzisNPusuQUE4G3yQsuj5J2Koh_eyeHxU/edit#gid=1732061316"
+          "cachedResultName": "Source Knowledge Map"
         },
         "options": {}
       },
@@ -76,10 +33,7 @@
       "name": "Google Sheets — Fetch Knowledge Base",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 3,
-      "position": [
-        2800,
-        1200
-      ],
+      "position": [2800, 1200],
       "credentials": {
         "googleSheetsOAuth2Api": {
           "id": "Q0kwnCWrgmL95E2O",
@@ -89,16 +43,13 @@
     },
     {
       "parameters": {
-        "jsCode": "// Get input from either Webhook or Google Sheet Trigger (Forms)\nconst webhookData = $node[\"Webhook — Form Submission\"]?.json || {};\nconst formData = $node[\"Google Sheets Trigger (Forms)\"]?.json || {};\n\n// Map form columns to variables (MATCHING YOUR NEW SHEET EXACTLY)\nconst headline = webhookData.headline || formData[\"News Article Headline\"] || \"\";\nconst article_text = webhookData.article_text || formData[\"Article Text or URL...\"] || headline;\nconst source_name = webhookData.source || formData[\"Source / Publication Name\"] || \"Unknown\";\n\nconst kb = items.map(i => i.json);\nconst input = (headline || article_text).toLowerCase();\n\n// RAG Matching Logic\nconst matches = kb.map(a => {\n  const title = a[\"Source Name\"] || a.title || \"\";\n  const score = input.split(' ').filter(word => title.toLowerCase().includes(word) && word.length > 4).length;\n  return { ...a, similarity_score: score };\n}).sort((a, b) => b.similarity_score - a.similarity_score);\n\nreturn matches.slice(0, 3).map(m => ({\n  json: {\n    ...m,\n    orig_headline: headline,\n    orig_text: article_text,\n    orig_source: source_name\n  }\n}));"
+        "jsCode": "// UNIVERSAL RAG MATCHER (Website + Google Form)\nconst inputData = $node[\"Webhook — Master Input\"].json;\n\n// Normalize data from Website OR Apps Script\nconst headline = inputData.headline || (inputData[\"News Article Headline\"] ? inputData[\"News Article Headline\"][0] : \"\");\nconst article_text = inputData.article_text || (inputData[\"Article Text or URL...\"] ? inputData[\"Article Text or URL...\"][0] : headline);\nconst source_name = inputData.source || (inputData[\"Source / Publication Name\"] ? inputData[\"Source / Publication Name\"][0] : \"Unknown\");\n\nconst kb = items.map(i => i.json);\nconst input = (headline || article_text).toLowerCase();\n\n// Similarity Match\nconst matches = kb.map(a => {\n  const title = (a[\"Source Name\"] || a.title || \"\").toLowerCase();\n  const score = input.split(' ').filter(word => title.includes(word) && word.length > 4).length;\n  return { ...a, similarity_score: score };\n}).sort((a, b) => b.similarity_score - a.similarity_score);\n\nreturn matches.slice(0, 3).map(m => ({\n  json: {\n    ...m,\n    orig_headline: headline,\n    orig_text: article_text,\n    orig_source: source_name\n  }\n}));"
       },
       "id": "5fb5e7b6-306a-4b9a-a163-54463e4a6ebb",
       "name": "Code — RAG Matcher",
       "type": "n8n-nodes-base.code",
       "typeVersion": 1,
-      "position": [
-        3000,
-        1200
-      ]
+      "position": [3000, 1200]
     },
     {
       "parameters": {
@@ -115,39 +66,32 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{\nJSON.stringify({\n  \"model\": \"llama-3.1-8b-instant\",\n  \"messages\": [\n    { \"role\": \"system\", \"content\": \"You are a JSON-only API. Analyze news for authenticity.\" },\n    { \"role\": \"user\", \"content\": `Analyze this news article for authenticity.\n\nKNOWLEDGE BASE CONTEXT:\n${$items(\"Code — RAG Matcher\").map(i => '- ' + (i.json[\"Source Name\"] || i.json.title) + ' (Label: ' + (i.json.Category || i.json.label) + ')').join('\\n')}\n\nArticle: ${$node[\"Code — RAG Matcher\"].json.orig_text}\n\nRespond in JSON:\n{\n  \"verdict\": \"REAL/FAKE\",\n  \"confidence\": 0-100,\n  \"sentiment_score\": 0-10,\n  \"sentiment_verdict\": \"NEUTRAL/EMOTIONAL/MANIPULATIVE\",\n  \"reason1\": \"...\",\n  \"reason2\": \"...\",\n  \"reason3\": \"...\",\n  \"similar_article\": \"...\"\n}` }\n  ],\n  \"response_format\": { \"type\": \"json_object\" }\n})\n}}\n",
+        "jsonBody": "={{\nJSON.stringify({\n  \"model\": \"llama-3.1-8b-instant\",\n  \"messages\": [\n    { \"role\": \"system\", \"content\": \"You are a JSON-only API. Analyze news for authenticity.\" },\n    { \"role\": \"user\", \"content\": `Analyze this article.\\nContext: ${$items(\"Code — RAG Matcher\").map(i => i.json[\"Source Name\"]).join(', ')}\\nText: ${$node[\"Code — RAG Matcher\"].json.orig_text}` }\n  ],\n  \"response_format\": { \"type\": \"json_object\" }\n})\n}}\n",
         "options": {}
       },
       "id": "886dbce5-be1e-4928-a84f-6abf3998ce6d",
       "name": "Groq — AI Analysis",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
-      "position": [
-        3200,
-        1200
-      ],
-      "executeOnce": true
+      "position": [3250, 1200]
     },
     {
       "parameters": {
-        "jsCode": "const aiRaw = $node[\"Groq — AI Analysis\"].json.choices[0].message.content;\nconst ai = JSON.parse(aiRaw);\nconst source = ($node[\"Code — RAG Matcher\"].json.orig_source || \"\").toUpperCase();\n\nlet verdict = ai.verdict;\nlet rule = \"AI Cloud Intelligence\";\n\nif (source.includes('FABRICATED')) { verdict = 'FAKE'; rule = 'Rule 1: Fabricated Source'; }\nelse if (source.includes('VIRAL') && ai.sentiment_score > 6) { verdict = 'FAKE'; rule = 'Rule 2: High Sentiment Risk'; }\nelse if (source.includes('REUTERS') && ai.sentiment_score < 3) { verdict = 'REAL'; rule = 'Rule 3: Trusted Clean Source'; }\nelse if (ai.confidence > 70 && ai.verdict === 'FAKE') { verdict = 'FAKE'; rule = 'Rule 4: High Confidence Confirmation'; }\n\nreturn { ...ai, verdict, rule_applied: rule, source_status: source.includes('REUTERS') ? 'TRUSTED' : 'UNKNOWN' };"
+        "jsCode": "const ai = JSON.parse($node[\"Groq — AI Analysis\"].json.choices[0].message.content);\nconst source = ($node[\"Code — RAG Matcher\"].json.orig_source || \"\").toUpperCase();\nlet verdict = ai.verdict;\nlet rule = \"AI Cloud Intelligence\";\n\nif (source.includes('FABRICATED')) { verdict = 'FAKE'; rule = 'Rule 1: Blacklisted Source'; }\nelse if (ai.confidence > 80) { rule = 'Rule 2: High Confidence AI'; }\n\nreturn { ...ai, verdict, rule_applied: rule };"
       },
       "id": "05ccafc0-db57-4198-8aad-f2ca0d37d79d",
       "name": "Code — Logic Engine",
       "type": "n8n-nodes-base.code",
       "typeVersion": 1,
-      "position": [
-        3400,
-        1200
-      ]
+      "position": [3450, 1200]
     },
     {
       "parameters": {
         "operation": "append",
         "documentId": {
           "__rl": true,
-          "value": "16AG4TGsOaeAzisNPusuQUE4G3yQsuj5J2Koh_eyeHxU",
-          "mode": ""
+          "value": "158k89DoXZYSQ_prFjqFXZN7KzecqVQ-uWlOSBdvvAto",
+          "mode": "list"
         },
         "sheetName": {
           "__rl": true,
@@ -155,16 +99,24 @@
           "mode": "list",
           "cachedResultName": "Article and Analysis"
         },
+        "dataMode": "mapEachColumn",
+        "fieldsUi": {
+          "values": [
+            { "columnName": "ARTICLE TITLE", "fieldValue": "={{$node[\"Code — RAG Matcher\"].json.orig_headline}}" },
+            { "columnName": "ARTICLE CONTENT", "fieldValue": "={{$node[\"Code — RAG Matcher\"].json.orig_text}}" },
+            { "columnName": "SOURCES", "fieldValue": "={{$node[\"Code — RAG Matcher\"].json.orig_source}}" },
+            { "columnName": "PREDICTED", "fieldValue": "={{$node[\"Code — Logic Engine\"].json.verdict}}" },
+            { "columnName": "BAYES CONFIDENCE SCORE (%)", "fieldValue": "={{$node[\"Code — Logic Engine\"].json.confidence}}" },
+            { "columnName": "LOGIC RULE VERDICT", "fieldValue": "={{$node[\"Code — Logic Engine\"].json.rule_applied}}" }
+          ]
+        },
         "options": {}
       },
       "id": "678c22cf-a1dd-4caa-9166-26a171b5faae",
       "name": "Google Sheets — Log History",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 3,
-      "position": [
-        3600,
-        1200
-      ],
+      "position": [3700, 1200],
       "credentials": {
         "googleSheetsOAuth2Api": {
           "id": "Q0kwnCWrgmL95E2O",
@@ -173,96 +125,20 @@
       }
     },
     {
-      "parameters": {
-        "options": {}
-      },
+      "parameters": { "options": {} },
       "id": "52a6035d-8ffb-4774-976e-976c15f796ff",
       "name": "Respond — Return Result",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
-      "position": [
-        3800,
-        1200
-      ]
+      "position": [3950, 1200]
     }
   ],
   "connections": {
-    "Webhook — Form Submission": {
-      "main": [
-        [
-          {
-            "node": "Google Sheets — Fetch Knowledge Base",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Google Sheets Trigger (Forms)": {
-      "main": [
-        [
-          {
-            "node": "Google Sheets — Fetch Knowledge Base",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Google Sheets — Fetch Knowledge Base": {
-      "main": [
-        [
-          {
-            "node": "Code — RAG Matcher",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Code — RAG Matcher": {
-      "main": [
-        [
-          {
-            "node": "Groq — AI Analysis",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Groq — AI Analysis": {
-      "main": [
-        [
-          {
-            "node": "Code — Logic Engine",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Code — Logic Engine": {
-      "main": [
-        [
-          {
-            "node": "Google Sheets — Log History",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Google Sheets — Log History": {
-      "main": [
-        [
-          {
-            "node": "Respond — Return Result",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    }
+    "Webhook — Master Input": { "main": [[{ "node": "Google Sheets — Fetch Knowledge Base", "type": "main", "index": 0 }]] },
+    "Google Sheets — Fetch Knowledge Base": { "main": [[{ "node": "Code — RAG Matcher", "type": "main", "index": 0 }]] },
+    "Code — RAG Matcher": { "main": [[{ "node": "Groq — AI Analysis", "type": "main", "index": 0 }]] },
+    "Groq — AI Analysis": { "main": [[{ "node": "Code — Logic Engine", "type": "main", "index": 0 }]] },
+    "Code — Logic Engine": { "main": [[{ "node": "Google Sheets — Log History", "type": "main", "index": 0 }]] },
+    "Google Sheets — Log History": { "main": [[{ "node": "Respond — Return Result", "type": "main", "index": 0 }]] }
   }
 }
