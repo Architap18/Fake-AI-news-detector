@@ -11,7 +11,10 @@
       "name": "Webhook — Form Submission",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1,
-      "position": [2544, 1120],
+      "position": [
+        2544,
+        1120
+      ],
       "webhookId": "02268fc7-c8ca-4b94-911a-b2d2c451e27f"
     },
     {
@@ -25,10 +28,10 @@
         },
         "documentId": {
           "__rl": true,
-          "value": "16AG4TGsOaeAzisNPusuQUE4G3yQsuj5J2Koh_eyeHxU",
+          "value": "158k89DoXZYSQ_prFjqFXZN7KzecqVQ-uWlOSBdvvAto",
           "mode": "list",
-          "cachedResultName": "Real or Fake - Google Sheet",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/16AG4TGsOaeAzisNPusuQUE4G3yQsuj5J2Koh_eyeHxU/edit"
+          "cachedResultName": "FakeShield — News Article Submission (Responses)",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/158k89DoXZYSQ_prFjqFXZN7KzecqVQ-uWlOSBdvvAto/edit"
         },
         "sheetName": {
           "__rl": true,
@@ -42,7 +45,10 @@
       "name": "Google Sheets Trigger (Forms)",
       "type": "n8n-nodes-base.googleSheetsTrigger",
       "typeVersion": 1,
-      "position": [2544, 1300],
+      "position": [
+        2544,
+        1300
+      ],
       "credentials": {
         "googleSheetsOAuth2Api": {
           "id": "Q0kwnCWrgmL95E2O",
@@ -70,7 +76,10 @@
       "name": "Google Sheets — Fetch Knowledge Base",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 3,
-      "position": [2800, 1200],
+      "position": [
+        2800,
+        1200
+      ],
       "credentials": {
         "googleSheetsOAuth2Api": {
           "id": "Q0kwnCWrgmL95E2O",
@@ -80,13 +89,16 @@
     },
     {
       "parameters": {
-        "jsCode": "// Get input from either Webhook or Google Sheet Trigger (Forms)\nconst webhookData = $node[\"Webhook — Form Submission\"]?.json || {};\nconst formData = $node[\"Google Sheets Trigger (Forms)\"]?.json || {};\n\n// Map form columns to variables\nconst headline = webhookData.headline || formData[\"Article Headline\"] || formData[\"Headline\"] || \"\";\nconst article_text = webhookData.article_text || formData[\"Article Text\"] || formData[\"Content\"] || headline;\nconst source_name = webhookData.source || formData[\"Source\"] || \"Unknown\";\n\nconst kb = items.map(i => i.json);\nconst input = (headline || article_text).toLowerCase();\n\n// RAG Matching Logic\nconst matches = kb.map(a => {\n  const title = a[\"Source Name\"] || a.title || \"\";\n  const score = input.split(' ').filter(word => title.toLowerCase().includes(word) && word.length > 4).length;\n  return { ...a, similarity_score: score };\n}).sort((a, b) => b.similarity_score - a.similarity_score);\n\nreturn matches.slice(0, 3).map(m => ({\n  json: {\n    ...m,\n    orig_headline: headline,\n    orig_text: article_text,\n    orig_source: source_name\n  }\n}));"
+        "jsCode": "// Get input from either Webhook or Google Sheet Trigger (Forms)\nconst webhookData = $node[\"Webhook — Form Submission\"]?.json || {};\nconst formData = $node[\"Google Sheets Trigger (Forms)\"]?.json || {};\n\n// Map form columns to variables (MATCHING YOUR NEW SHEET EXACTLY)\nconst headline = webhookData.headline || formData[\"News Article Headline\"] || \"\";\nconst article_text = webhookData.article_text || formData[\"Article Text or URL...\"] || headline;\nconst source_name = webhookData.source || formData[\"Source / Publication Name\"] || \"Unknown\";\n\nconst kb = items.map(i => i.json);\nconst input = (headline || article_text).toLowerCase();\n\n// RAG Matching Logic\nconst matches = kb.map(a => {\n  const title = a[\"Source Name\"] || a.title || \"\";\n  const score = input.split(' ').filter(word => title.toLowerCase().includes(word) && word.length > 4).length;\n  return { ...a, similarity_score: score };\n}).sort((a, b) => b.similarity_score - a.similarity_score);\n\nreturn matches.slice(0, 3).map(m => ({\n  json: {\n    ...m,\n    orig_headline: headline,\n    orig_text: article_text,\n    orig_source: source_name\n  }\n}));"
       },
       "id": "5fb5e7b6-306a-4b9a-a163-54463e4a6ebb",
       "name": "Code — RAG Matcher",
       "type": "n8n-nodes-base.code",
       "typeVersion": 1,
-      "position": [3000, 1200]
+      "position": [
+        3000,
+        1200
+      ]
     },
     {
       "parameters": {
@@ -110,7 +122,10 @@
       "name": "Groq — AI Analysis",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
-      "position": [3200, 1200],
+      "position": [
+        3200,
+        1200
+      ],
       "executeOnce": true
     },
     {
@@ -121,7 +136,10 @@
       "name": "Code — Logic Engine",
       "type": "n8n-nodes-base.code",
       "typeVersion": 1,
-      "position": [3400, 1200]
+      "position": [
+        3400,
+        1200
+      ]
     },
     {
       "parameters": {
@@ -143,7 +161,10 @@
       "name": "Google Sheets — Log History",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 3,
-      "position": [3600, 1200],
+      "position": [
+        3600,
+        1200
+      ],
       "credentials": {
         "googleSheetsOAuth2Api": {
           "id": "Q0kwnCWrgmL95E2O",
@@ -152,16 +173,31 @@
       }
     },
     {
-      "parameters": { "options": {} },
+      "parameters": {
+        "options": {}
+      },
       "id": "52a6035d-8ffb-4774-976e-976c15f796ff",
       "name": "Respond — Return Result",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
-      "position": [3800, 1200]
+      "position": [
+        3800,
+        1200
+      ]
     }
   ],
   "connections": {
-    "Webhook — Form Submission": { "main": [[{ "node": "Google Sheets — Fetch Knowledge Base", "type": "main", "index": 0 }]] },
+    "Webhook — Form Submission": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets — Fetch Knowledge Base",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "Google Sheets Trigger (Forms)": {
       "main": [
         [
@@ -173,10 +209,60 @@
         ]
       ]
     },
-    "Google Sheets — Fetch Knowledge Base": { "main": [[{ "node": "Code — RAG Matcher", "type": "main", "index": 0 }]] },
-    "Code — RAG Matcher": { "main": [[{ "node": "Groq — AI Analysis", "type": "main", "index": 0 }]] },
-    "Groq — AI Analysis": { "main": [[{ "node": "Code — Logic Engine", "type": "main", "index": 0 }]] },
-    "Code — Logic Engine": { "main": [[{ "node": "Google Sheets — Log History", "type": "main", "index": 0 }]] },
-    "Google Sheets — Log History": { "main": [[{ "node": "Respond — Return Result", "type": "main", "index": 0 }]] }
+    "Google Sheets — Fetch Knowledge Base": {
+      "main": [
+        [
+          {
+            "node": "Code — RAG Matcher",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code — RAG Matcher": {
+      "main": [
+        [
+          {
+            "node": "Groq — AI Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq — AI Analysis": {
+      "main": [
+        [
+          {
+            "node": "Code — Logic Engine",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code — Logic Engine": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets — Log History",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets — Log History": {
+      "main": [
+        [
+          {
+            "node": "Respond — Return Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
   }
 }
