@@ -37,7 +37,7 @@ Identifies trusted sources (Reuters, BBC, AP)
 Flags suspicious or unverified publishers
 Detects lack of citation patterns
 
-### 🧠 Forensic AI Pattern Detection
+### Forensic AI Pattern Detection
 Utilizing **Llama 3.1 via Groq**, the engine analyzes:
 - **Linguistic Signatures**: Detecting AI-generated vs. Human-authored text.
 - **Emotional Bias Sensor**: Identifying high-manipulation sentiment patterns.
@@ -45,7 +45,7 @@ Utilizing **Llama 3.1 via Groq**, the engine analyzes:
 
 ---
 
-## 🛠️ Tech Stack & Architecture
+## Tech Stack & Architecture
 
 - **Frontend**: React.js with Premium Glassmorphism UI & Framer Motion animations.
 - **Automation Core**: n8n (Node-based workflow automation).
@@ -55,7 +55,7 @@ Utilizing **Llama 3.1 via Groq**, the engine analyzes:
 
 ---
 
-## 📂 System Architecture
+## System Architecture
 
 ```mermaid
 graph TD
@@ -87,9 +87,4 @@ graph TD
    npm run dev
    ```
 
----
 
-## 🛡️ Sentinel Mission
-*Our mission is to provide transparency in an era of digital deception. FakeShield isn't just a detector; it's a forensic gateway to the truth.*
-
-**Built for the 2024 Hackathon Excellence.** 🚀🛡️🤖
