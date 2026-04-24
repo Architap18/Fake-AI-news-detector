@@ -58,7 +58,6 @@ function App() {
       <main className="content-area">
         <header className="view-header">
           <h1>FakeShield<span style={{color:'var(--secondary)'}}> // </span>AI</h1>
-          <div className="typing-text">Analyzing credibility since 2024...</div>
         </header>
 
         {activeView === 'analyzer' && (

@@ -2,17 +2,22 @@
 
 :root {
     --bg-dark: #0a0a0f;
-    --surface: rgba(255, 255, 255, 0.03);
-    --primary: #00ff88;
-    --secondary: #00d4ff;
-    --danger: #ff3366;
-    --safe: #00ff88;
-    --text: #e0e0e0;
-    --muted: #555566;
-    --font-display: 'Space Mono', monospace;
-    --font-body: 'Syne', sans-serif;
-    --glow: 0 0 10px rgba(0, 255, 136, 0.5);
-    --border-glow: 1px solid rgba(0, 255, 136, 0.2);
+    --surface: rgba(219, 234, 254, 0.05);
+    --primary: #2563EB;
+    --primary-glow: rgba(37, 99, 235, 0.4);
+    --secondary: #3B82F6;
+    --secondary-glow: rgba(59, 130, 246, 0.3);
+    --danger: #ff0055;
+    --safe: #2563EB;
+    --text: #DBEAFE;
+    --muted: #888888;
+    --bg: #050508;
+    --card-bg: rgba(30, 58, 138, 0.3);
+    --border: rgba(37, 99, 235, 0.15);
+    --font-display: 'JetBrains Mono', 'Space Mono', 'Outfit', monospace;
+    --font-body: 'Syne', 'Outfit', sans-serif;
+    --glow: 0 0 10px rgba(37, 99, 235, 0.5);
+    --border-glow: 1px solid rgba(37, 99, 235, 0.2);
 }
 
 * {
@@ -37,7 +42,7 @@ body::before {
     left: 0;
     width: 100vw;
     height: 100vh;
-    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(37, 99, 235, 0.02), rgba(59, 130, 246, 0.06));
     background-size: 100% 4px, 3px 100%;
     z-index: 1000;
     pointer-events: none;
@@ -51,20 +56,6 @@ body::before {
 }
 
 /* --- PREMIUM INTELLIGENCE TERMINAL STYLES --- */
-:root {
-  --primary: #00f2ff;
-  --primary-glow: rgba(0, 242, 255, 0.4);
-  --secondary: #7000ff;
-  --secondary-glow: rgba(112, 0, 255, 0.3);
-  --bg: #050508;
-  --card-bg: rgba(15, 15, 25, 0.7);
-  --border: rgba(0, 242, 255, 0.15);
-  --text: #e0e0e0;
-  --muted: #888;
-  --danger: #ff0055;
-  --safe: #00ffaa;
-  --font-display: 'JetBrains Mono', 'Outfit', monospace;
-}
 
 body {
   background: radial-gradient(circle at 50% 50%, #0a0a1a 0%, #050508 100%);
@@ -161,7 +152,7 @@ body {
 .evidence-pill.verified {
   border-color: var(--safe);
   color: var(--safe);
-  background: rgba(0, 255, 170, 0.05);
+  background: rgba(37, 99, 235, 0.05);
 }
 
 /* --- INPUT ENHANCEMENTS --- */
@@ -199,7 +190,7 @@ nav {
 
 .status-badge.real {
   color: var(--safe);
-  text-shadow: 0 0 20px rgba(0, 255, 170, 0.6), 0 0 40px rgba(0, 255, 170, 0.2);
+  text-shadow: 0 0 20px rgba(37, 99, 235, 0.6), 0 0 40px rgba(37, 99, 235, 0.2);
 }
 
 .status-badge.fake {
@@ -213,7 +204,7 @@ nav {
 }
 
 .pill.verified {
-  background: rgba(0, 255, 170, 0.15);
+  background: rgba(37, 99, 235, 0.15);
   color: var(--safe);
   border: 1px solid var(--safe);
 }
@@ -363,7 +354,7 @@ textarea {
 }
 
 .btn-primary:hover {
-    background: #00e67a;
+    background: #1E3A8A;
     box-shadow: var(--glow);
 }
 
@@ -462,7 +453,7 @@ textarea {
     border: 1px solid transparent;
 }
 
-.pill.trusted { color: var(--safe); border-color: var(--safe); background: rgba(0, 255, 136, 0.05); }
+.pill.trusted { color: var(--safe); border-color: var(--safe); background: rgba(37, 99, 235, 0.05); }
 .pill.flagged { color: var(--danger); border-color: var(--danger); background: rgba(255, 51, 102, 0.05); }
 .pill.unknown { color: #facc15; border-color: #facc15; background: rgba(250, 204, 21, 0.05); }
 
@@ -507,7 +498,7 @@ td {
     font-size: 0.7rem;
 }
 
-.badge.real { background: rgba(0, 255, 136, 0.1); color: var(--safe); }
+.badge.real { background: rgba(37, 99, 235, 0.1); color: var(--safe); }
 .badge.fake { background: rgba(255, 51, 102, 0.1); color: var(--danger); }
 
 /* Modal Settings */
